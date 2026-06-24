@@ -5,8 +5,6 @@ import { YamlProvider } from './providers/yaml.provider.ts';
 import { MysqlProvider } from './providers/mysql.provider.ts';
 import { LitLogger } from '../logger.ts';
 
-const log = LitLogger.child('Storage');
-
 export class StorageManager {
   private provider: StorageProvider | null = null;
   private namespaces = new Map<string, StorageProvider>();
@@ -15,7 +13,7 @@ export class StorageManager {
 
   async init(): Promise<void> {
     this.provider = await this.create(this.config.driver);
-    log.info(`Initialized ${this.config.driver.toUpperCase()} storage`);
+    LitLogger.info('Storage', `Initialized ${this.config.driver.toUpperCase()} storage`);
   }
 
   /**
@@ -43,7 +41,7 @@ export class StorageManager {
     await this.provider?.close();
     this.namespaces.clear();
     this.provider = null;
-    log.info('Storage closed');
+    LitLogger.info('Storage', 'Storage closed');
   }
 
   private async create(driver: StorageDriver): Promise<StorageProvider> {

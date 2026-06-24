@@ -3,24 +3,22 @@ import { resolve } from 'node:path';
 import { LitLogger } from './logger.ts';
 import type { StorageConfig, StorageDriver } from './storage/types.ts';
 
-const log = LitLogger.child('Config');
-
 const envPath = resolve(process.cwd(), '.env');
 loadDotenv({ path: envPath });
 
 function required(key: string): string {
   const value = process.env[key];
   if (!value) {
-    log.error(`Missing required environment variable: ${key}`);
+    LitLogger.error('Config', `Missing required environment variable: ${key}`);
     throw new Error(`Missing required environment variable: ${key}`);
   }
-  log.debug(`Loaded ${key} = ${key.includes('TOKEN') ? '***' : value}`);
+  LitLogger.debug('Config', `Loaded ${key} = ${key.includes('TOKEN') ? '***' : value}`);
   return value;
 }
 
 function optional(key: string, fallback: string): string {
   const value = process.env[key] ?? fallback;
-  log.debug(`Loaded ${key} = ${value}`);
+  LitLogger.debug('Config', `Loaded ${key} = ${value}`);
   return value;
 }
 

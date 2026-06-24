@@ -24,14 +24,17 @@ const A = {
 
 type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
-const LEVELS: Record<LogLevel, { badge: string; color: string; pri: number }> = {
-  trace: { badge: '\u250c', color: A.gray,    pri: 0 },
-  debug: { badge: '\u2502', color: A.cyan,    pri: 1 },
-  info:  { badge: '\u2714', color: A.bGreen,  pri: 2 },
-  warn:  { badge: '\u26a0', color: A.bYellow, pri: 3 },
-  error: { badge: '\u2716', color: A.bRed,    pri: 4 },
-  fatal: { badge: '\u2620', color: A.red,     pri: 5 },
+const LEVELS: Record<LogLevel, { icon: string; color: string; label: string; pri: number }> = {
+  trace: { icon: '\u250c', color: A.gray,    label: 'TRACE', pri: 0 },
+  debug: { icon: '\u2502', color: A.cyan,    label: 'DEBUG', pri: 1 },
+  info:  { icon: '\u2714', color: A.bGreen,  label: 'INFO ', pri: 2 },
+  warn:  { icon: '\u26a0', color: A.bYellow, label: 'WARN ', pri: 3 },
+  error: { icon: '\u2716', color: A.bRed,    label: 'ERROR', pri: 4 },
+  fatal: { icon: '\u2620', color: A.red,     label: 'FATAL', pri: 5 },
 };
+
+const SCOPE_WIDTH = 16;
+const LEVEL_WIDTH = 10; // icon(1) + space(1) + label(5) + space(1) = 8, but we pad to 10 for alignment
 
 let minLevel: LogLevel = 'trace';
 
@@ -46,39 +49,66 @@ function ts(): string {
   return `${h}:${m}:${s},${ms}`;
 }
 
+/**
+ * Format a log line with strict column alignment:
+ *
+ *   HH:MM:SS,ms  ✔  INFO   [Scope]         Message
+ *   HH:MM:SS,ms  │  DEBUG  [Scope]            Message
+ *   HH:MM:SS,ms  ├  INFO   [Scope]            Message
+ */
 function fmt(level: LogLevel, scope: string, msg: string): string {
   const l = LEVELS[level];
-  const badge = `${l.color}${A.bold}${l.badge}  ${level.toUpperCase().padEnd(5)}${A.reset}`;
-  const sco = `${A.bCyan}${A.bold}${scope.padEnd(14)}${A.reset}`;
-  return `${A.gray}${ts()}${A.reset}  ${badge}  ${sco} ${msg}`;
+  const badge = `${l.color}${A.bold}${l.icon}${A.reset}`;
+  const label = `${l.color}${A.bold}${l.label}${A.reset}`;
+  const sco = `${A.bCyan}${A.bold}[${scope}]${A.reset}`;
+  // Pad scope to fixed width (visible chars only)
+  const pad = Math.max(0, SCOPE_WIDTH - scope.length - 2); // -2 for brackets
+  const paddedSco = sco + ' '.repeat(pad);
+  return `${A.gray}${ts()}${A.reset}  ${badge}  ${label}  ${paddedSco} ${msg}`;
 }
 
+/**
+ * Plain (no ANSI) version for file logging.
+ */
 function plain(level: LogLevel, scope: string, msg: string): string {
   const l = LEVELS[level];
-  return `${ts()}  ${l.badge}  ${level.toUpperCase().padEnd(5)}  ${scope.padEnd(14)} ${msg}`;
+  const sco = `[${scope}]`.padEnd(SCOPE_WIDTH + 2);
+  return `${ts()}  ${l.icon}  ${l.label}  ${sco} ${msg}`;
+}
+
+/**
+ * Indented line (for tree-style, details, sub-items).
+ * Aligns with the message column of the main format.
+ */
+function indent(level: LogLevel, scope: string, tree: string, msg: string): string {
+  const l = LEVELS[level];
+  const badge = `${l.color}${A.bold}${l.icon}${A.reset}`;
+  const label = `${l.color}${A.bold}${l.label}${A.reset}`;
+  const sco = `${A.bCyan}${A.bold}[${scope}]${A.reset}`;
+  const pad = Math.max(0, SCOPE_WIDTH - scope.length - 2);
+  const paddedSco = sco + ' '.repeat(pad);
+  return `${A.gray}${ts()}${A.reset}  ${badge}  ${label}  ${paddedSco} ${A.gray}${tree}${A.reset} ${msg}`;
 }
 
 function emit(level: LogLevel, scope: string, msg: string, data?: unknown): void {
   if (LEVELS[level].pri < LEVELS[minLevel].pri) return;
 
-  const line = fmt(level, scope, msg);
-  const dest = level === 'error' || level === 'fatal' ? console.error : console.log;
-  dest(line);
+  console.log(fmt(level, scope, msg));
 
   if (data !== undefined) {
     const json = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    const pad = ' '.repeat(12 + 2 + LEVEL_WIDTH + 2 + SCOPE_WIDTH + 2);
     for (const row of json.split('\n')) {
-      dest(`${A.gray}${ts()}           ${A.reset}  ${row}`);
+      console.log(`${A.gray}${pad}${row}${A.reset}`);
     }
   }
 
-  // File
+  // File logging
   try {
     const dir = resolve(process.cwd(), 'logs');
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
     const date = new Date().toISOString().slice(0, 10);
-    const fileLine = plain(level, scope, msg) + '\n';
-    appendFileSync(resolve(dir, `${date}.log`), fileLine);
+    appendFileSync(resolve(dir, `${date}.log`), plain(level, scope, msg) + '\n');
   } catch {}
 }
 
@@ -105,22 +135,34 @@ export const LitLogger = {
     };
   },
 
+  /**
+   * Tree-style log line. Aligns with the message column.
+   *
+   *   02:28:33,210  ✔  INFO   [Loader]           ├─ moduleName v1.0.0
+   *   02:28:33,211  │  DEBUG  [Loader]            │  Commands: cmd1, cmd2
+   */
+  tree(scope: string, connector: string, msg: string, level: LogLevel = 'info'): void {
+    console.log(indent(level, scope, connector, msg));
+  },
+
   async measure<T>(scope: string, label: string, fn: () => Promise<T>): Promise<T> {
     const start = performance.now();
     try {
       const result = await fn();
       const ms = (performance.now() - start).toFixed(1);
-      emit('info', scope, `${label} ${A.bGreen}done${A.reset} ${A.bold}${ms}ms${A.reset}`);
+      emit('info', scope, `${label} ${A.bGreen}done${A.reset} in ${A.bold}${ms}ms${A.reset}`);
       return result;
     } catch (err) {
       const ms = (performance.now() - start).toFixed(1);
-      emit('error', scope, `${label} ${A.bRed}failed${A.reset} ${A.bold}${ms}ms${A.reset}`);
+      emit('error', scope, `${label} ${A.bRed}failed${A.reset} after ${A.bold}${ms}ms${A.reset}`);
       throw err;
     }
   },
 
   line(): void {
-    console.log(`${A.gray}${'─'.repeat(60)}${A.reset}`);
+    // Full width line matching the log format
+    const width = 12 + 2 + LEVEL_WIDTH + 2 + SCOPE_WIDTH + 2 + 40; // ts + gap + level + gap + scope + gap + msg
+    console.log(`${A.gray}${'\u2500'.repeat(width)}${A.reset}`);
   },
 
   banner(): void {

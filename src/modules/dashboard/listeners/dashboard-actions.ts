@@ -13,8 +13,6 @@ import { COLORS } from '../../../shared/colors.ts';
 import { LitLogger } from '../../../kernel/logger.ts';
 import { FAV_ID, DETAILS_ID, SEE_ALL_ID } from '../builders/profile-card.ts';
 
-const log = LitLogger.child('dashboard');
-
 function buildEphemeral(title: string, body: string): ContainerBuilder {
   return new ContainerBuilder()
     .setAccentColor(COLORS.BLURPLE)
@@ -31,16 +29,16 @@ async function handleInteraction(interaction: Interaction): Promise<void> {
 
   switch (btn.customId) {
     case FAV_ID: {
-      log.info(`${btn.user.tag} fav'd ${btn.message.interactionMetadata?.user?.tag ?? 'a profile'}`);
+      LitLogger.info('Dashboard', `${btn.user.tag} fav'd ${btn.message.interactionMetadata?.user?.tag ?? 'a profile'}`);
       await btn.reply({
-        components: [buildEphemeral('⭐', 'Profile added to favorites!')],
+        components: [buildEphemeral('\u2b50', 'Profile added to favorites!')],
         flags: MessageFlags.IsComponentsV2,
         ephemeral: true,
       });
       break;
     }
     case DETAILS_ID: {
-      log.info(`${btn.user.tag} requested league details`);
+      LitLogger.info('Dashboard', `${btn.user.tag} requested league details`);
       await btn.reply({
         components: [buildEphemeral(
           '## \ud83c\udfc6 League Details',
@@ -55,15 +53,15 @@ async function handleInteraction(interaction: Interaction): Promise<void> {
       break;
     }
     case SEE_ALL_ID: {
-      log.info(`${btn.user.tag} requested all achievements`);
+      LitLogger.info('Dashboard', `${btn.user.tag} requested all achievements`);
       await btn.reply({
         components: [buildEphemeral(
           '## \ud83c\udfc5 All Achievements',
           '**4** badges earned\n\n' +
-          '- 🏆 First Message\n' +
-          '- 💬 Active Chatter (100 msgs)\n' +
-          '- 🎉 Event Participant\n' +
-          '- ⭐ Community Star',
+          '- \ud83c\udfc6 First Message\n' +
+          '- \ud83d\udcac Active Chatter (100 msgs)\n' +
+          '- \ud83c\udf89 Event Participant\n' +
+          '- \u2b50 Community Star',
         )],
         flags: MessageFlags.IsComponentsV2,
         ephemeral: true,

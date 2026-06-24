@@ -14,9 +14,6 @@ import { COLORS } from '../../../shared/colors.ts';
 import { LitLogger } from '../../../kernel/logger.ts';
 import { SELECT_ID, BUTTON_ID } from '../builders/showcase-panel.ts';
 
-const log = LitLogger.child('v2-showcase');
-const SCOPE = 'v2-showcase';
-
 const FEATURE_DESCRIPTIONS: Record<string, string> = {
   container: '**Container** \u2014 Un box visuale con bordi arrotondati e accent color laterale. Puo\' contenere tutti gli altri componenti.',
   section: '**Section** \u2014 Raggruppa 1-3 TextDisplay con un accessory laterale (thumbnail o button).',
@@ -54,7 +51,7 @@ function buildInfoResponse(): ContainerBuilder {
 async function handleInteraction(interaction: Interaction): Promise<void> {
   if (interaction.isStringSelectMenu() && interaction.customId === SELECT_ID) {
     const selected = (interaction as StringSelectMenuInteraction).values[0];
-    log.info(`User ${interaction.user.tag} selected feature: ${selected}`);
+    LitLogger.info('V2Showcase', `User ${interaction.user.tag} selected feature: ${selected}`);
 
     const container = buildFeatureResponse(selected);
 
@@ -67,7 +64,7 @@ async function handleInteraction(interaction: Interaction): Promise<void> {
   }
 
   if (interaction.isButton() && interaction.customId === BUTTON_ID) {
-    log.info(`User ${interaction.user.tag} clicked Info button`);
+    LitLogger.info('V2Showcase', `User ${interaction.user.tag} clicked Info button`);
 
     const container = buildInfoResponse();
 

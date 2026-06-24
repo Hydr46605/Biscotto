@@ -4,13 +4,11 @@ import type { CommandDefinition } from '../../../contracts/module.contract.ts';
 import { LitLogger } from '../../../kernel/logger.ts';
 import { buildShowcasePanel, FILE_NAME } from '../builders/showcase-panel.ts';
 
-const log = LitLogger.child('v2-showcase');
-
 async function execute(
   interaction: ChatInputCommandInteraction,
   _client: Client,
 ): Promise<void> {
-  log.debug(`Building showcase panel for ${interaction.user.tag}`);
+  LitLogger.debug('V2Showcase', `Building showcase panel for ${interaction.user.tag}`);
 
   const panel = buildShowcasePanel();
 
@@ -43,7 +41,7 @@ async function execute(
     flags: MessageFlags.IsComponentsV2,
   });
 
-  log.info(`Showcase panel sent to ${interaction.user.tag}`);
+  LitLogger.info('V2Showcase', `Showcase panel sent to ${interaction.user.tag}`);
 }
 
 export const showcaseCommand: CommandDefinition = {

@@ -4,8 +4,6 @@ import type { CommandDefinition } from '../../../contracts/module.contract.ts';
 import { LitLogger } from '../../../kernel/logger.ts';
 import { buildProfileCard } from '../builders/profile-card.ts';
 
-const log = LitLogger.child('dashboard');
-
 const BADGE_PLACEHOLDERS = [
   'https://placehold.co/120x120/2c2f33/5865f2?text=Badge',
   'https://placehold.co/120x120/2c2f33/57f287?text=Badge',
@@ -20,7 +18,7 @@ async function execute(
   const target = interaction.options.getUser('user') ?? interaction.user;
   const member = interaction.guild?.members.cache.get(target.id);
 
-  log.debug(`Building profile card for ${target.tag}`);
+  LitLogger.debug('Dashboard', `Building profile card for ${target.tag}`);
 
   const card = buildProfileCard({
     tag: target.tag,
@@ -43,7 +41,7 @@ async function execute(
     flags: MessageFlags.IsComponentsV2,
   });
 
-  log.info(`Profile card sent for ${target.tag}`);
+  LitLogger.info('Dashboard', `Profile card sent for ${target.tag}`);
 }
 
 export const profileCommand: CommandDefinition = {

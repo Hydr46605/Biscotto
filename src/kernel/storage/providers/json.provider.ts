@@ -4,8 +4,6 @@ import { dirname } from 'node:path';
 import type { StorageProvider } from '../types.ts';
 import { LitLogger } from '../../logger.ts';
 
-const log = LitLogger.child('Storage:JSON');
-
 export class JsonProvider implements StorageProvider {
   readonly driver = 'json' as const;
   private data = new Map<string, unknown>();
@@ -26,14 +24,14 @@ export class JsonProvider implements StorageProvider {
         const raw = await readFile(this.path, 'utf-8');
         const parsed = JSON.parse(raw) as Record<string, unknown>;
         this.data = new Map(Object.entries(parsed));
-        log.debug(`Loaded ${this.data.size} entries from ${this.path}`);
+        LitLogger.debug('Storage:JSON', `Loaded ${this.data.size} entries from ${this.path}`);
       } catch (error) {
-        log.error(`Failed to parse ${this.path}: ${error}`);
+        LitLogger.error('Storage:JSON', `Failed to parse ${this.path}: ${error}`);
         this.data = new Map();
       }
     } else {
       await this.flush();
-      log.debug(`Created new store at ${this.path}`);
+      LitLogger.debug('Storage:JSON', `Created new store at ${this.path}`);
     }
   }
 

@@ -3,8 +3,6 @@ import type { CommandDefinition } from '../contracts/module.contract.ts';
 import { LitLogger } from './logger.ts';
 import { config } from './config.ts';
 
-const log = LitLogger.child('Registrar');
-
 export class CommandRegistrar {
   private readonly rest: REST;
 
@@ -20,8 +18,8 @@ export class CommandRegistrar {
     const isGuildDeploy = config.guildId !== null;
     const target = isGuildDeploy ? `guild ${config.guildId}` : 'global';
 
-    log.info(`Deploying ${body.length} command(s) to ${target}...`);
-    log.debug(`Commands: ${body.map((c) => `/${c.name}`).join(', ')}`);
+    LitLogger.info('Registrar', `Deploying ${body.length} command(s) to ${target}...`);
+    LitLogger.debug('Registrar', `Commands: ${body.map((c) => `/${c.name}`).join(', ')}`);
 
     try {
       const route = isGuildDeploy
@@ -31,10 +29,10 @@ export class CommandRegistrar {
       const result = await this.rest.put(route, { body });
 
       const registered = Array.isArray(result) ? result.length : 0;
-      log.info(`Successfully registered ${registered} command(s) to ${target}`);
+      LitLogger.info('Registrar', `Successfully registered ${registered} command(s) to ${target}`);
     } catch (error) {
-      log.error(`Failed to deploy commands: ${error}`);
-      log.warn('Bot will continue — commands may not be available until deployment succeeds');
+      LitLogger.error('Registrar', `Failed to deploy commands: ${error}`);
+      LitLogger.warn('Registrar', 'Bot will continue \u2014 commands may not be available until deployment succeeds');
     }
   }
 }
