@@ -25,12 +25,12 @@ const A = {
 type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
 const LEVELS: Record<LogLevel, { icon: string; color: string; label: string; pri: number }> = {
-  trace: { icon: '\u250c', color: A.gray,    label: 'TRACE', pri: 0 },
-  debug: { icon: '\u2502', color: A.cyan,    label: 'DEBUG', pri: 1 },
-  info:  { icon: '\u2714', color: A.bGreen,  label: 'INFO ', pri: 2 },
-  warn:  { icon: '\u26a0', color: A.bYellow, label: 'WARN ', pri: 3 },
-  error: { icon: '\u2716', color: A.bRed,    label: 'ERROR', pri: 4 },
-  fatal: { icon: '\u2620', color: A.red,     label: 'FATAL', pri: 5 },
+  trace: { icon: '-', color: A.gray,    label: 'TRACE', pri: 0 },
+  debug: { icon: '>', color: A.cyan,    label: 'DEBUG', pri: 1 },
+  info:  { icon: '+', color: A.bGreen,  label: 'INFO ', pri: 2 },
+  warn:  { icon: '!', color: A.bYellow, label: 'WARN ', pri: 3 },
+  error: { icon: 'x', color: A.bRed,    label: 'ERROR', pri: 4 },
+  fatal: { icon: 'X', color: A.red,     label: 'FATAL', pri: 5 },
 };
 
 const SCOPE_WIDTH = 16;
@@ -52,9 +52,9 @@ function ts(): string {
 /**
  * Format a log line with strict column alignment:
  *
- *   HH:MM:SS,ms  ✔  INFO   [Scope]         Message
- *   HH:MM:SS,ms  │  DEBUG  [Scope]            Message
- *   HH:MM:SS,ms  ├  INFO   [Scope]            Message
+ *   HH:MM:SS,ms  +  INFO   [Scope]         Message
+ *   HH:MM:SS,ms  >  DEBUG  [Scope]            Message
+ *   HH:MM:SS,ms  -  TRACE  [Scope]            Message
  */
 function fmt(level: LogLevel, scope: string, msg: string): string {
   const l = LEVELS[level];
@@ -138,8 +138,8 @@ export const LitLogger = {
   /**
    * Tree-style log line. Aligns with the message column.
    *
-   *   02:28:33,210  ✔  INFO   [Loader]           ├─ moduleName v1.0.0
-   *   02:28:33,211  │  DEBUG  [Loader]            │  Commands: cmd1, cmd2
+   *   02:28:33,210  +  INFO   [Loader]           |- moduleName v1.0.0
+   *   02:28:33,211  >  DEBUG  [Loader]           |  Commands: cmd1, cmd2
    */
   tree(scope: string, connector: string, msg: string, level: LogLevel = 'info'): void {
     console.log(indent(level, scope, connector, msg));
@@ -162,13 +162,13 @@ export const LitLogger = {
   line(): void {
     // Full width line matching the log format
     const width = 12 + 2 + LEVEL_WIDTH + 2 + SCOPE_WIDTH + 2 + 40; // ts + gap + level + gap + scope + gap + msg
-    console.log(`${A.gray}${'\u2500'.repeat(width)}${A.reset}`);
+    console.log(`${A.gray}${'-'.repeat(width)}${A.reset}`);
   },
 
   banner(): void {
     const b = [
       '',
-      `  ${A.bCyan}${A.bold}Hy${A.bRed}drotto${A.reset}`,
+      `  ${A.bCyan}${A.bold}Bi${A.bYellow}scotto${A.reset}`,
       `  ${A.gray}Modular Discord Bot${A.reset}`,
       '',
       `  ${A.dim}Node     ${A.reset} ${A.bWhite}${process.version}${A.reset}`,

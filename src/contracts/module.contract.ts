@@ -31,7 +31,7 @@ export interface ModuleRegistration {
   readonly events?: EventDefinition[];
 }
 
-export interface HydrottoModule {
+export interface BiscottoModule {
   readonly manifest: ModuleManifest;
   register(): ModuleRegistration;
   onInit?(client: Client): Promise<void> | void;

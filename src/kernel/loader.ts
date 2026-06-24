@@ -1,9 +1,9 @@
 import type { Client } from 'discord.js';
-import type { HydrottoModule, CommandDefinition, EventDefinition } from '../contracts/module.contract.ts';
+import type { BiscottoModule, CommandDefinition, EventDefinition } from '../contracts/module.contract.ts';
 import { LitLogger } from './logger.ts';
 
 interface LoadedModule {
-  instance: HydrottoModule;
+  instance: BiscottoModule;
   commands: CommandDefinition[];
   events: EventDefinition[];
 }
@@ -13,7 +13,7 @@ export class ModuleLoader {
 
   constructor(private readonly client: Client) {}
 
-  async loadAll(modules: HydrottoModule[]): Promise<void> {
+  async loadAll(modules: BiscottoModule[]): Promise<void> {
     LitLogger.info('Loader', `Discovering ${modules.length} module(s)...`);
 
     for (const mod of modules) {
@@ -25,7 +25,7 @@ export class ModuleLoader {
     LitLogger.info('Loader', `Loaded ${this.loaded.length} module(s) \u2014 ${totalCmds} command(s), ${totalEvts} event(s)`);
   }
 
-  private async load(mod: HydrottoModule): Promise<void> {
+  private async load(mod: BiscottoModule): Promise<void> {
     const { manifest } = mod;
 
     if (manifest.dependencies) {
@@ -48,13 +48,13 @@ export class ModuleLoader {
         await mod.onInit(this.client);
       }
 
-      const desc = manifest.description ? ` \u2014 ${manifest.description}` : '';
-      LitLogger.tree('Loader', `\u251c\u2500`, `${manifest.name} v${manifest.version}${desc}`);
+      const desc = manifest.description ? ` - ${manifest.description}` : '';
+      LitLogger.tree('Loader', '|-', `${manifest.name} v${manifest.version}${desc}`);
       if (cmds.length > 0) {
-        LitLogger.tree('Loader', `\u2502  `, `Commands: ${cmds.map((c) => c.data.name).join(', ')}`, 'debug');
+        LitLogger.tree('Loader', '| ', `Commands: ${cmds.map((c) => c.data.name).join(', ')}`, 'debug');
       }
       if (evts.length > 0) {
-        LitLogger.tree('Loader', `\u2502  `, `Events: ${evts.map((e) => e.event).join(', ')}`, 'debug');
+        LitLogger.tree('Loader', '| ', `Events: ${evts.map((e) => e.event).join(', ')}`, 'debug');
       }
     } catch (error) {
       LitLogger.error('Loader', `Failed to load module "${manifest.name}": ${error}`);

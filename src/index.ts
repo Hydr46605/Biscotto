@@ -7,7 +7,7 @@ export let storage: StorageManager;
 
 async function bootstrap(): Promise<void> {
   LitLogger.banner();
-  LitLogger.info('Bootstrap', 'Initializing Hydrotto...');
+  LitLogger.info('Bootstrap', 'Initializing Biscotto...');
 
   const client = createClient();
   const loader = new ModuleLoader(client);

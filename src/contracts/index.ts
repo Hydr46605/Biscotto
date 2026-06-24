@@ -3,5 +3,5 @@ export type {
   CommandDefinition,
   EventDefinition,
   ModuleRegistration,
-  HydrottoModule,
+  BiscottoModule,
 } from './module.contract.ts';

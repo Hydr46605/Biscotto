@@ -13,7 +13,7 @@ export class CommandDispatcher {
     }
     LitLogger.info('Dispatcher', `Registered ${commands.length} command(s) for dispatch`);
     for (const cmd of commands) {
-      LitLogger.tree('Dispatcher', `\u251c\u2500`, `/${cmd.data.name}`, 'debug');
+      LitLogger.tree('Dispatcher', '|-', `/${cmd.data.name}`, 'debug');
     }
   }
 
