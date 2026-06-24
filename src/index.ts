@@ -1,6 +1,9 @@
 import { Events } from 'discord.js';
-import { createClient, config, LitLogger, ModuleLoader, CommandRegistrar, CommandDispatcher } from './kernel/index.ts';
+import { createClient, config, LitLogger, ModuleLoader, CommandRegistrar, CommandDispatcher, StorageManager } from './kernel/index.ts';
 import { modules } from './modules/index.ts';
+
+// Global storage instance accessible from any module
+export let storage: StorageManager;
 
 async function bootstrap(): Promise<void> {
   LitLogger.banner();
@@ -10,6 +13,10 @@ async function bootstrap(): Promise<void> {
   const loader = new ModuleLoader(client);
   const registrar = new CommandRegistrar();
   const dispatcher = new CommandDispatcher(client);
+
+  // Initialize storage
+  storage = new StorageManager(config.storage);
+  await LitLogger.measure('Storage', 'Initialization', () => storage.init());
 
   // Load all modules
   await LitLogger.measure('Bootstrap', 'Module loading', () => loader.loadAll(modules));
@@ -49,6 +56,7 @@ async function bootstrap(): Promise<void> {
   process.on('SIGINT', async () => {
     LitLogger.line();
     LitLogger.warn('Shutdown', 'Received SIGINT, shutting down gracefully...');
+    await storage.close();
     await loader.destroyAll();
     client.destroy();
     LitLogger.info('Shutdown', 'Goodbye!');
