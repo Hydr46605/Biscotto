@@ -17,17 +17,21 @@ export class CommandRegistrar {
       (cmd) => cmd.data.toJSON(),
     );
 
-    log.info(`Deploying ${body.length} command(s) to Discord API...`);
+    const isGuildDeploy = config.guildId !== null;
+    const target = isGuildDeploy ? `guild ${config.guildId}` : 'global';
+
+    log.info(`Deploying ${body.length} command(s) to ${target}...`);
     log.debug(`Commands: ${body.map((c) => `/${c.name}`).join(', ')}`);
 
     try {
-      const result = await this.rest.put(
-        Routes.applicationCommands(config.clientId),
-        { body },
-      );
+      const route = isGuildDeploy
+        ? Routes.applicationGuildCommands(config.clientId, config.guildId!)
+        : Routes.applicationCommands(config.clientId);
+
+      const result = await this.rest.put(route, { body });
 
       const registered = Array.isArray(result) ? result.length : 0;
-      log.info(`Successfully registered ${registered} command(s) globally`);
+      log.info(`Successfully registered ${registered} command(s) to ${target}`);
     } catch (error) {
       log.error(`Failed to deploy commands: ${error}`);
       log.warn('Bot will continue — commands may not be available until deployment succeeds');
