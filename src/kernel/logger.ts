@@ -169,7 +169,7 @@ export const LitLogger = {
     const b = [
       '',
       `  ${A.bCyan}${A.bold}Bi${A.bYellow}scotto${A.reset}`,
-      `  ${A.gray}Modular Discord Bot${A.reset}`,
+      `  ${A.gray}freshly baked for your server${A.reset}`,
       '',
       `  ${A.dim}Node     ${A.reset} ${A.bWhite}${process.version}${A.reset}`,
       `  ${A.dim}Platform ${A.reset} ${A.bWhite}${process.platform} ${process.arch}${A.reset}`,

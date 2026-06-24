@@ -1,6 +1,7 @@
 node_modules/
 dist/
 data/
+.biscotto/
 .env
 *.log
 .DS_Store

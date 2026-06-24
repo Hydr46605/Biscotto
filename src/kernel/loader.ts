@@ -29,7 +29,7 @@ export class ModuleLoader {
     const { manifest } = mod;
 
     if (manifest.dependencies) {
-      for (const dep of manifest.dependencies) {
+      for (const dep of Object.keys(manifest.dependencies)) {
         if (!this.loaded.some((m) => m.instance.manifest.name === dep)) {
           LitLogger.error('Loader', `Module "${manifest.name}" requires "${dep}" which is not loaded`);
           return;

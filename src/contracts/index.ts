@@ -1,5 +1,7 @@
 export type {
+  ModuleAuthor,
   ModuleManifest,
+  BiscottoManifest,
   CommandDefinition,
   EventDefinition,
   ModuleRegistration,

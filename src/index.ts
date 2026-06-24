@@ -1,6 +1,8 @@
+import { resolve } from 'node:path';
 import { Events } from 'discord.js';
 import { createClient, config, LitLogger, ModuleLoader, CommandRegistrar, CommandDispatcher, StorageManager } from './kernel/index.ts';
-import { modules } from './modules/index.ts';
+import { loadFromDisk } from './kernel/dynamic-loader.ts';
+import { modules as builtinModules } from './modules/index.ts';
 
 // Global storage instance accessible from any module
 export let storage: StorageManager;
@@ -18,8 +20,20 @@ async function bootstrap(): Promise<void> {
   storage = new StorageManager(config.storage);
   await LitLogger.measure('Storage', 'Initialization', () => storage.init());
 
-  // Load all modules
-  await LitLogger.measure('Bootstrap', 'Module loading', () => loader.loadAll(modules));
+  // Load builtin modules (zero)
+  await LitLogger.measure('Bootstrap', 'Builtin modules', () => loader.loadAll(builtinModules));
+
+  // Load external modules from .biscotto/modules/
+  const modulesDir = resolve(process.cwd(), '.biscotto', 'modules');
+  const { modules: externalModules, errors } = await loadFromDisk(modulesDir, builtinModules);
+
+  if (errors.length > 0) {
+    LitLogger.warn('Bootstrap', `${errors.length} module(s) failed to load`);
+  }
+
+  if (externalModules.length > 0) {
+    await LitLogger.measure('Bootstrap', 'External modules', () => loader.loadAll(externalModules));
+  }
 
   // Register commands with Discord API
   const commands = loader.getCommands();
