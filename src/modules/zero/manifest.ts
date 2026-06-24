@@ -1,7 +1,7 @@
 import type { ModuleManifest } from '../../contracts/module.contract.ts';
 
 export const manifest: ModuleManifest = {
-  name: 'v2-showcase',
+  name: 'zero',
   version: '1.0.0',
-  description: 'Demonstrates all Discord Components V2 features',
-} as const;
+  description: 'Core module — base scaffold for Biscotto',
+};
