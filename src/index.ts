@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { Events } from 'discord.js';
 import { createClient, config, LitLogger, ModuleLoader, CommandRegistrar, CommandDispatcher, StorageManager } from './kernel/index.ts';
-import { loadFromDisk } from './kernel/dynamic-loader.ts';
+import { loadFromDisk } from './kernel/discovery.ts';
 import { modules as builtinModules } from './modules/index.ts';
 
 // Global storage instance accessible from any module
