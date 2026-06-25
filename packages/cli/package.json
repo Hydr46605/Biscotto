@@ -2,6 +2,12 @@
   "name": "@biscotto/cli",
   "version": "1.0.0",
   "description": "CLI for managing Biscotto Discord bot",
+  "author": "Hydr46605 <https://github.com/Hydr46605>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hydr46605/Biscotto.git",
+    "directory": "packages/cli"
+  },
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -16,5 +22,6 @@
     "@types/node": "^26.0.1",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3"
-  }
+  },
+  "license": "MIT"
 }

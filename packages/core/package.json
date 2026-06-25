@@ -2,6 +2,12 @@
   "name": "@biscotto/core",
   "version": "1.0.0",
   "description": "Biscotto Discord bot framework",
+  "author": "Hydr46605 <https://github.com/Hydr46605>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hydr46605/Biscotto.git",
+    "directory": "packages/core"
+  },
   "type": "commonjs",
   "main": "dist/index.js",
   "scripts": {
@@ -24,5 +30,6 @@
     "@types/node": "^26.0.1",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3"
-  }
+  },
+  "license": "MIT"
 }
