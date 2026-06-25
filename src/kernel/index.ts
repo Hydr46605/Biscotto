@@ -4,6 +4,7 @@ export { LitLogger } from './logger.ts';
 export { ModuleLoader } from './loader.ts';
 export { CommandRegistrar } from './registrar.ts';
 export { CommandDispatcher } from './dispatcher.ts';
+export { ProcessManager } from './process.ts';
 export { StorageManager, NamespacedStorage } from './storage/index.ts';
 export { validateManifest, loadManifest, ManifestError } from './validation.ts';
 export { InstalledRegistry } from './registry.ts';
