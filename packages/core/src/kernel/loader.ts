@@ -1,10 +1,26 @@
 import type { Client, GatewayIntentBits } from 'discord.js';
-import type { BiscottoModule, CommandDefinition, EventDefinition } from '../contracts/module.contract.ts';
+import type {
+  BiscottoModule,
+  CommandDefinition,
+  ButtonDefinition,
+  SelectMenuDefinition,
+  ModalDefinition,
+  AutocompleteDefinition,
+  UserContextMenuDefinition,
+  MessageContextMenuDefinition,
+  EventDefinition,
+} from '../contracts/module.contract.ts';
 import { LitLogger } from './logger.ts';
 
 interface LoadedModule {
   instance: BiscottoModule & { intents?: GatewayIntentBits[] };
   commands: CommandDefinition[];
+  buttons: ButtonDefinition[];
+  selectMenus: SelectMenuDefinition[];
+  modals: ModalDefinition[];
+  autocompletes: AutocompleteDefinition[];
+  userContextMenus: UserContextMenuDefinition[];
+  messageContextMenus: MessageContextMenuDefinition[];
   events: EventDefinition[];
 }
 
@@ -24,8 +40,12 @@ export class ModuleLoader {
     }
 
     const totalCmds = this.loaded.reduce((a, m) => a + m.commands.length, 0);
-    const totalEvts = this.loaded.reduce((a, m) => a + m.events.length, 0);
-    LitLogger.info('Loader', `Loaded ${this.loaded.length} module(s) \u2014 ${totalCmds} command(s), ${totalEvts} event(s)`);
+    const totalBtns = this.loaded.reduce((a, m) => a + m.buttons.length, 0);
+    const totalMenus = this.loaded.reduce((a, m) => a + m.selectMenus.length, 0);
+    const totalModals = this.loaded.reduce((a, m) => a + m.modals.length, 0);
+    const totalEvents = this.loaded.reduce((a, m) => a + m.events.length, 0);
+    const total = totalCmds + totalBtns + totalMenus + totalModals + totalEvents;
+    LitLogger.info('Loader', `Loaded ${this.loaded.length} module(s) \u2014 ${total} interaction(s)`);
   }
 
   private async load(mod: ModuleLike): Promise<void> {
@@ -43,9 +63,25 @@ export class ModuleLoader {
     try {
       const registration = mod.register();
       const cmds = registration.commands ?? [];
+      const btns = registration.buttons ?? [];
+      const menus = registration.selectMenus ?? [];
+      const modals = registration.modals ?? [];
+      const acs = registration.autocompletes ?? [];
+      const ucms = registration.userContextMenus ?? [];
+      const mcms = registration.messageContextMenus ?? [];
       const evts = registration.events ?? [];
 
-      this.loaded.push({ instance: mod, commands: cmds, events: evts });
+      this.loaded.push({
+        instance: mod,
+        commands: cmds,
+        buttons: btns,
+        selectMenus: menus,
+        modals: modals,
+        autocompletes: acs,
+        userContextMenus: ucms,
+        messageContextMenus: mcms,
+        events: evts,
+      });
 
       if (mod.onInit && this.client) {
         await mod.onInit(this.client);
@@ -55,6 +91,15 @@ export class ModuleLoader {
       LitLogger.tree('Loader', '|-', `${manifest.name} v${manifest.version}${desc}`);
       if (cmds.length > 0) {
         LitLogger.tree('Loader', '| ', `Commands: ${cmds.map((c) => c.data.name).join(', ')}`, 'debug');
+      }
+      if (btns.length > 0) {
+        LitLogger.tree('Loader', '| ', `Buttons: ${btns.map((b) => b.customId).join(', ')}`, 'debug');
+      }
+      if (menus.length > 0) {
+        LitLogger.tree('Loader', '| ', `SelectMenus: ${menus.map((m) => m.customId).join(', ')}`, 'debug');
+      }
+      if (modals.length > 0) {
+        LitLogger.tree('Loader', '| ', `Modals: ${modals.map((m) => m.customId).join(', ')}`, 'debug');
       }
       if (evts.length > 0) {
         LitLogger.tree('Loader', '| ', `Events: ${evts.map((e) => e.event).join(', ')}`, 'debug');
@@ -66,6 +111,30 @@ export class ModuleLoader {
 
   getCommands(): CommandDefinition[] {
     return this.loaded.flatMap((m) => m.commands);
+  }
+
+  getButtons(): ButtonDefinition[] {
+    return this.loaded.flatMap((m) => m.buttons);
+  }
+
+  getSelectMenus(): SelectMenuDefinition[] {
+    return this.loaded.flatMap((m) => m.selectMenus);
+  }
+
+  getModals(): ModalDefinition[] {
+    return this.loaded.flatMap((m) => m.modals);
+  }
+
+  getAutocompletes(): AutocompleteDefinition[] {
+    return this.loaded.flatMap((m) => m.autocompletes);
+  }
+
+  getUserContextMenus(): UserContextMenuDefinition[] {
+    return this.loaded.flatMap((m) => m.userContextMenus);
+  }
+
+  getMessageContextMenus(): MessageContextMenuDefinition[] {
+    return this.loaded.flatMap((m) => m.messageContextMenus);
   }
 
   getEvents(): EventDefinition[] {

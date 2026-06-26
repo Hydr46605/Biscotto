@@ -3,6 +3,13 @@ import type {
   Events,
   SlashCommandBuilder,
   ChatInputCommandInteraction,
+  ButtonInteraction,
+  AnySelectMenuInteraction,
+  ModalSubmitInteraction,
+  AutocompleteInteraction,
+  UserContextMenuCommandInteraction,
+  MessageContextMenuCommandInteraction,
+  GatewayIntentBits,
 } from 'discord.js';
 
 // ── Module Manifest ───────────────────────────────────────────────────────────
@@ -42,6 +49,54 @@ export interface CommandDefinition {
   ): Promise<void>;
 }
 
+export interface ButtonDefinition {
+  readonly customId: string;
+  execute(
+    interaction: ButtonInteraction,
+    client: Client,
+  ): Promise<void>;
+}
+
+export interface SelectMenuDefinition {
+  readonly customId: string;
+  execute(
+    interaction: AnySelectMenuInteraction,
+    client: Client,
+  ): Promise<void>;
+}
+
+export interface ModalDefinition {
+  readonly customId: string;
+  execute(
+    interaction: ModalSubmitInteraction,
+    client: Client,
+  ): Promise<void>;
+}
+
+export interface AutocompleteDefinition {
+  readonly name: string;
+  execute(
+    interaction: AutocompleteInteraction,
+    client: Client,
+  ): Promise<void>;
+}
+
+export interface UserContextMenuDefinition {
+  readonly name: string;
+  execute(
+    interaction: UserContextMenuCommandInteraction,
+    client: Client,
+  ): Promise<void>;
+}
+
+export interface MessageContextMenuDefinition {
+  readonly name: string;
+  execute(
+    interaction: MessageContextMenuCommandInteraction,
+    client: Client,
+  ): Promise<void>;
+}
+
 export interface EventDefinition {
   readonly event: Events;
   readonly once?: boolean;
@@ -50,6 +105,12 @@ export interface EventDefinition {
 
 export interface ModuleRegistration {
   readonly commands?: CommandDefinition[];
+  readonly buttons?: ButtonDefinition[];
+  readonly selectMenus?: SelectMenuDefinition[];
+  readonly modals?: ModalDefinition[];
+  readonly autocompletes?: AutocompleteDefinition[];
+  readonly userContextMenus?: UserContextMenuDefinition[];
+  readonly messageContextMenus?: MessageContextMenuDefinition[];
   readonly events?: EventDefinition[];
 }
 
@@ -60,4 +121,8 @@ export interface BiscottoModule {
   register(): ModuleRegistration;
   onInit?(client: Client): Promise<void> | void;
   onDestroy?(): Promise<void> | void;
+}
+
+export interface BiscottoModuleWithIntents extends BiscottoModule {
+  readonly intents: GatewayIntentBits[];
 }

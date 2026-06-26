@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { Events } from 'discord.js';
-import { createClient, config, LitLogger, ModuleLoader, CommandRegistrar, CommandDispatcher, StorageManager } from './kernel/index.ts';
+import { createClient, config, LitLogger, ModuleLoader, CommandRegistrar, InteractionRouter, StorageManager } from './kernel/index.ts';
 import { loadFromDisk } from './kernel/discovery.ts';
 import { modules as builtinModules } from './modules/index.ts';
 
@@ -8,8 +8,35 @@ import { modules as builtinModules } from './modules/index.ts';
 export let storage: StorageManager;
 
 // Re-export API helpers for module authors
-export { defineCommand, defineEvent, defineModule } from './kernel/define.ts';
-export type { CommandContext, CommandConfig, EventConfig, ModuleConfig } from './kernel/define.ts';
+export {
+  defineCommand,
+  defineButton,
+  defineSelectMenu,
+  defineModal,
+  defineAutocomplete,
+  defineUserContextMenu,
+  defineMessageContextMenu,
+  defineEvent,
+  defineModule,
+} from './kernel/define.ts';
+export type {
+  CommandContext,
+  CommandConfig,
+  ButtonContext,
+  ButtonConfig,
+  SelectMenuContext,
+  SelectMenuConfig,
+  ModalContext,
+  ModalConfig,
+  AutocompleteContext,
+  AutocompleteConfig,
+  UserContextMenuContext,
+  UserContextMenuConfig,
+  MessageContextMenuContext,
+  MessageContextMenuConfig,
+  EventConfig,
+  ModuleConfig,
+} from './kernel/define.ts';
 export type { ModuleManifest, BiscottoModule } from './contracts/module.contract.ts';
 
 async function bootstrap(): Promise<void> {
@@ -50,10 +77,18 @@ async function bootstrap(): Promise<void> {
     await LitLogger.measure('Registrar', 'Command deployment', () => registrar.deploy(commands));
   }
 
-  // Setup interaction dispatcher
-  const dispatcher = new CommandDispatcher(client);
-  dispatcher.register(commands);
-  dispatcher.listen();
+  // Setup interaction router
+  const router = new InteractionRouter(client);
+  router.register({
+    commands: loader.getCommands(),
+    buttons: loader.getButtons(),
+    selectMenus: loader.getSelectMenus(),
+    modals: loader.getModals(),
+    autocompletes: loader.getAutocompletes(),
+    userContextMenus: loader.getUserContextMenus(),
+    messageContextMenus: loader.getMessageContextMenus(),
+  });
+  router.listen();
 
   // Register events from modules
   const events = loader.getEvents();
@@ -65,7 +100,7 @@ async function bootstrap(): Promise<void> {
       client.on(eventDef.event as never, handler as never);
     }
   }
-  LitLogger.info('Dispatcher', `Registered ${events.length} event listener(s)`);
+  LitLogger.info('Bootstrap', `Registered ${events.length} event listener(s)`);
 
   // Ready event
   client.once(Events.ClientReady, (readyClient) => {
