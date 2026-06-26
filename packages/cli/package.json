@@ -14,7 +14,8 @@
     "biscotto": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "templates"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
