@@ -1,16 +1,22 @@
 import type { Command } from '../command.ts';
 
-const REGISTRY_URL = 'https://raw.githubusercontent.com/Hydr46605/BiscottoRegistry/main/registry.json';
+const REGISTRY_URL = 'https://raw.githubusercontent.com/Hydr46605/BiscottoRegistry/main/registry/modules.json';
 
-interface RegistryEntry {
-  repo: string;
+interface ModuleEntry {
+  name: string;
   description: string;
-  tags?: string[];
-  latest: string;
+  author: { name: string; url?: string };
+  repository: string;
+  version: string;
+  tags: string[];
+  category: string;
+  featured?: boolean;
+  stable?: boolean;
 }
 
 interface Registry {
-  modules: Record<string, RegistryEntry>;
+  version: number;
+  modules: ModuleEntry[];
 }
 
 async function fetchRegistry(): Promise<Registry | null> {
@@ -39,20 +45,19 @@ export const searchCommand: Command = {
       process.exit(1);
     }
 
-    const entries = Object.entries(registry.modules);
-
-    if (entries.length === 0) {
+    if (registry.modules.length === 0) {
       console.log('  No modules in registry.');
       return;
     }
 
     const filtered = query
-      ? entries.filter(([name, entry]) =>
-          name.includes(query) ||
-          entry.description.toLowerCase().includes(query) ||
-          entry.tags?.some((t) => t.includes(query))
+      ? registry.modules.filter((mod) =>
+          mod.name.includes(query) ||
+          mod.description.toLowerCase().includes(query) ||
+          mod.tags.some((t) => t.includes(query)) ||
+          mod.category.includes(query)
         )
-      : entries;
+      : registry.modules;
 
     if (filtered.length === 0) {
       console.log(`  No modules found matching "${query}".`);
@@ -60,12 +65,17 @@ export const searchCommand: Command = {
     }
 
     console.log('');
-    for (const [name, entry] of filtered) {
-      const source = entry.repo.replace('https://github.com/', '');
-      console.log(`  ${name}@${entry.latest}`);
-      console.log(`    ${entry.description}`);
+    for (const mod of filtered) {
+      const source = mod.repository.replace('https://github.com/', '');
+      const badges = [
+        mod.featured ? '★ featured' : '',
+        mod.stable ? '' : '⚠ unstable',
+      ].filter(Boolean).join(' · ');
+
+      console.log(`  ${mod.name}@${mod.version}  [${mod.category}]${badges ? '  ' + badges : ''}`);
+      console.log(`    ${mod.description}`);
       console.log(`    ${source}`);
-      if (entry.tags?.length) console.log(`    tags: ${entry.tags.join(', ')}`);
+      console.log(`    tags: ${mod.tags.join(', ')}`);
       console.log('');
     }
 
