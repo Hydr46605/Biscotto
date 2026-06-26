@@ -7,8 +7,10 @@ import type {
   AutocompleteDefinition,
   UserContextMenuDefinition,
   MessageContextMenuDefinition,
+  MiddlewareOptions,
 } from '../contracts/module.contract.ts';
 import { LitLogger } from './logger.ts';
+import { MiddlewarePipeline } from './middleware/pipeline.ts';
 
 export class InteractionRouter {
   private commands = new Map<string, CommandDefinition>();
@@ -18,6 +20,7 @@ export class InteractionRouter {
   private autocompletes = new Map<string, AutocompleteDefinition>();
   private userContextMenus = new Map<string, UserContextMenuDefinition>();
   private messageContextMenus = new Map<string, MessageContextMenuDefinition>();
+  private pipeline = new MiddlewarePipeline();
 
   constructor(private readonly client: Client) {}
 
@@ -112,6 +115,13 @@ export class InteractionRouter {
     const guild = interaction.guild?.name ?? 'DM';
     LitLogger.info('Router', `Executing /${interaction.commandName} \u2014 ${user} in ${guild}`);
 
+    // Run middleware
+    const middleware = await this.pipeline.run(interaction, command, `/${command.data.name}`);
+    if (!middleware.allowed) {
+      await this.replyToInteraction(interaction, middleware.reply ?? 'Command blocked.', true);
+      return;
+    }
+
     try {
       await command.execute(interaction, this.client);
       LitLogger.debug('Router', `/${interaction.commandName} completed`);
@@ -131,6 +141,13 @@ export class InteractionRouter {
 
     LitLogger.info('Router', `Executing button:${interaction.customId} \u2014 ${interaction.user.tag}`);
 
+    // Run middleware
+    const middleware = await this.pipeline.run(interaction, handler, `btn:${handler.customId}`);
+    if (!middleware.allowed) {
+      await this.replyToInteraction(interaction, middleware.reply ?? 'Button blocked.', true);
+      return;
+    }
+
     try {
       await handler.execute(interaction, this.client);
       LitLogger.debug('Router', `Button ${interaction.customId} completed`);
@@ -149,6 +166,13 @@ export class InteractionRouter {
     }
 
     LitLogger.info('Router', `Executing select:${interaction.customId} \u2014 ${interaction.user.tag}`);
+
+    // Run middleware
+    const middleware = await this.pipeline.run(interaction, handler, `select:${handler.customId}`);
+    if (!middleware.allowed) {
+      await this.replyToInteraction(interaction, middleware.reply ?? 'Select menu blocked.', true);
+      return;
+    }
 
     try {
       await handler.execute(interaction, this.client);
@@ -200,6 +224,13 @@ export class InteractionRouter {
 
     LitLogger.info('Router', `Executing userMenu:${interaction.commandName} \u2014 ${interaction.user.tag}`);
 
+    // Run middleware
+    const middleware = await this.pipeline.run(interaction, handler, `userMenu:${handler.name}`);
+    if (!middleware.allowed) {
+      await this.replyToInteraction(interaction, middleware.reply ?? 'Context menu blocked.', true);
+      return;
+    }
+
     try {
       await handler.execute(interaction, this.client);
       LitLogger.debug('Router', `User context menu ${interaction.commandName} completed`);
@@ -219,12 +250,31 @@ export class InteractionRouter {
 
     LitLogger.info('Router', `Executing messageMenu:${interaction.commandName} \u2014 ${interaction.user.tag}`);
 
+    // Run middleware
+    const middleware = await this.pipeline.run(interaction, handler, `msgMenu:${handler.name}`);
+    if (!middleware.allowed) {
+      await this.replyToInteraction(interaction, middleware.reply ?? 'Context menu blocked.', true);
+      return;
+    }
+
     try {
       await handler.execute(interaction, this.client);
       LitLogger.debug('Router', `Message context menu ${interaction.commandName} completed`);
     } catch (error) {
       LitLogger.error('Router', `Error executing message context menu ${interaction.commandName}: ${error}`);
       await this.replyError(interaction);
+    }
+  }
+
+  private async replyToInteraction(interaction: Interaction, content: string, ephemeral: boolean): Promise<void> {
+    if (!('reply' in interaction)) return;
+    const i = interaction as { reply: Function; replied: boolean; deferred: boolean; followUp: Function };
+    const reply = { content, ephemeral };
+
+    if (i.replied || i.deferred) {
+      await i.followUp(reply).catch(() => {});
+    } else {
+      await i.reply(reply).catch(() => {});
     }
   }
 

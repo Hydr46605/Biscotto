@@ -41,7 +41,12 @@ export type BiscottoManifest = ModuleManifest;
 
 // ── Module Registration ───────────────────────────────────────────────────────
 
-export interface CommandDefinition {
+export interface MiddlewareOptions {
+  readonly cooldown?: number;
+  readonly permissions?: string[];
+}
+
+export interface CommandDefinition extends MiddlewareOptions {
   readonly data: SlashCommandBuilder;
   execute(
     interaction: ChatInputCommandInteraction,
@@ -49,7 +54,7 @@ export interface CommandDefinition {
   ): Promise<void>;
 }
 
-export interface ButtonDefinition {
+export interface ButtonDefinition extends MiddlewareOptions {
   readonly customId: string;
   execute(
     interaction: ButtonInteraction,
@@ -57,7 +62,7 @@ export interface ButtonDefinition {
   ): Promise<void>;
 }
 
-export interface SelectMenuDefinition {
+export interface SelectMenuDefinition extends MiddlewareOptions {
   readonly customId: string;
   execute(
     interaction: AnySelectMenuInteraction,
@@ -81,7 +86,7 @@ export interface AutocompleteDefinition {
   ): Promise<void>;
 }
 
-export interface UserContextMenuDefinition {
+export interface UserContextMenuDefinition extends MiddlewareOptions {
   readonly name: string;
   execute(
     interaction: UserContextMenuCommandInteraction,
@@ -89,7 +94,7 @@ export interface UserContextMenuDefinition {
   ): Promise<void>;
 }
 
-export interface MessageContextMenuDefinition {
+export interface MessageContextMenuDefinition extends MiddlewareOptions {
   readonly name: string;
   execute(
     interaction: MessageContextMenuCommandInteraction,

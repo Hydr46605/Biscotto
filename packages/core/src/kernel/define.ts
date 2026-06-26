@@ -46,6 +46,8 @@ export interface CommandContext {
 export interface CommandConfig {
   name: string;
   description: string;
+  cooldown?: number;
+  permissions?: string[];
   execute: (ctx: CommandContext) => Promise<void>;
 }
 
@@ -72,6 +74,8 @@ export function defineCommand(config: CommandConfig): CommandDefinition {
 
   return {
     data: builder,
+    cooldown: config.cooldown,
+    permissions: config.permissions,
     async execute(interaction, client) {
       await config.execute(createCommandContext(interaction, client));
     },
@@ -89,6 +93,8 @@ export interface ButtonContext {
 
 export interface ButtonConfig {
   customId: string;
+  cooldown?: number;
+  permissions?: string[];
   execute: (ctx: ButtonContext) => Promise<void>;
 }
 
@@ -111,6 +117,8 @@ function createButtonContext(
 export function defineButton(config: ButtonConfig): ButtonDefinition {
   return {
     customId: config.customId,
+    cooldown: config.cooldown,
+    permissions: config.permissions,
     async execute(interaction, client) {
       await config.execute(createButtonContext(interaction, client));
     },
@@ -129,6 +137,8 @@ export interface SelectMenuContext {
 
 export interface SelectMenuConfig {
   customId: string;
+  cooldown?: number;
+  permissions?: string[];
   execute: (ctx: SelectMenuContext) => Promise<void>;
 }
 
@@ -152,6 +162,8 @@ function createSelectMenuContext(
 export function defineSelectMenu(config: SelectMenuConfig): SelectMenuDefinition {
   return {
     customId: config.customId,
+    cooldown: config.cooldown,
+    permissions: config.permissions,
     async execute(interaction, client) {
       await config.execute(createSelectMenuContext(interaction, client));
     },
@@ -242,6 +254,8 @@ export interface UserContextMenuContext {
 
 export interface UserContextMenuConfig {
   name: string;
+  cooldown?: number;
+  permissions?: string[];
   execute: (ctx: UserContextMenuContext) => Promise<void>;
 }
 
@@ -265,6 +279,8 @@ function createUserContextMenuContext(
 export function defineUserContextMenu(config: UserContextMenuConfig): UserContextMenuDefinition {
   return {
     name: config.name,
+    cooldown: config.cooldown,
+    permissions: config.permissions,
     async execute(interaction, client) {
       await config.execute(createUserContextMenuContext(interaction, client));
     },
@@ -283,6 +299,8 @@ export interface MessageContextMenuContext {
 
 export interface MessageContextMenuConfig {
   name: string;
+  cooldown?: number;
+  permissions?: string[];
   execute: (ctx: MessageContextMenuContext) => Promise<void>;
 }
 
@@ -306,6 +324,8 @@ function createMessageContextMenuContext(
 export function defineMessageContextMenu(config: MessageContextMenuConfig): MessageContextMenuDefinition {
   return {
     name: config.name,
+    cooldown: config.cooldown,
+    permissions: config.permissions,
     async execute(interaction, client) {
       await config.execute(createMessageContextMenuContext(interaction, client));
     },

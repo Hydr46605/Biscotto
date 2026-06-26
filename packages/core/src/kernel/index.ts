@@ -11,6 +11,9 @@ export { validateManifest, loadManifest, ManifestError } from './validation.ts';
 export { InstalledRegistry } from './registry.ts';
 export { resolveDependencies, checkDependencies, DependencyError } from './resolver.ts';
 export { loadFromDisk, discoverModules } from './discovery.ts';
+export { CooldownManager } from './middleware/cooldown.ts';
+export { PermissionChecker } from './middleware/permissions.ts';
+export { MiddlewarePipeline } from './middleware/pipeline.ts';
 export {
   defineCommand,
   defineButton,
@@ -44,3 +47,5 @@ export type { InstalledModule, InstalledFile } from './registry.ts';
 export type { ResolvedModule } from './resolver.ts';
 export type { LoadResult, LoadError } from './discovery.ts';
 export type { StorageConfig, StorageProvider, StorageDriver } from './storage/types.ts';
+export type { MiddlewareConfig, MiddlewareResult } from './middleware/pipeline.ts';
+export type { PermissionString } from './middleware/permissions.ts';
