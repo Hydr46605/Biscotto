@@ -1,11 +1,8 @@
 ## What's Changed
 
 ### 📦 Other Changes
-- chore: revert versions to 1.0.2 for release workflow (db3ffff)
-- docs: add getting-started guide and update README examples (f259180)
-- release: v1.1.0 (ec9dc01)
-- feat(core): add defineCommand, defineEvent, defineModule API helpers with declarative intents (44934f6)
-- docs: add npm links to packages table (382859f)
-- feat(cli): update search command to use new registry schema (5cd4464)
+- release: v1.2.0 (e762fb4)
+- fix(cli): include templates directory in npm package files (d77fdf1)
+- feat(core): add defineButton, defineSelectMenu, defineModal, defineAutocomplete, defineContextMenu helpers with InteractionRouter (fa7b85b)
 
-**Full Changelog**: https://github.com/Hydr46605/Biscotto/compare/v1.0.2...v1.1.0
+**Full Changelog**: https://github.com/Hydr46605/Biscotto/compare/v1.1.0...v1.3.0
