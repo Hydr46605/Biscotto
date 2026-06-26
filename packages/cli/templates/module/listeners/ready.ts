@@ -1,10 +1,9 @@
-import { Events } from 'discord.js';
 import { defineEvent } from '@biscotto/core';
 
-export default defineEvent({
-  event: Events.ClientReady,
+export const onReady = defineEvent({
+  name: 'ready',
   once: true,
-  async execute(client) {
-    console.log(`[{{MODULE_NAME}}] Biscotto is online as ${(client as any).user?.tag}`);
+  run(client) {
+    console.log(`Logged in as ${client.user?.tag}`);
   },
 });

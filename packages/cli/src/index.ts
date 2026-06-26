@@ -19,6 +19,34 @@ ${commands.map((c) => `    ${c.name.padEnd(12)} ${c.description}`).join('\n')}
 `);
 }
 
+// ── Arg Parsing ───────────────────────────────────────────────────────────────
+
+function parseArgs(rest: string[]): { args: string[]; flags: string[]; options: Record<string, string> } {
+  const args: string[] = [];
+  const flags: string[] = [];
+  const options: Record<string, string> = {};
+
+  for (let i = 0; i < rest.length; i++) {
+    const arg = rest[i];
+    if (arg.startsWith('--')) {
+      const key = arg.slice(2);
+      const next = rest[i + 1];
+      if (next && !next.startsWith('--')) {
+        options[key] = next;
+        i++;
+      } else {
+        flags.push(key);
+      }
+    } else if (arg.startsWith('-')) {
+      flags.push(arg.slice(1));
+    } else {
+      args.push(arg);
+    }
+  }
+
+  return { args, flags, options };
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
@@ -50,7 +78,8 @@ async function main(): Promise<void> {
     return;
   }
 
-  const ctx: CommandContext = { args: rest, root };
+  const { args, flags, options } = parseArgs(rest);
+  const ctx: CommandContext = { args, flags, options, root };
 
   try {
     await command.run(ctx);

@@ -8,7 +8,6 @@ export const manifest: ModuleManifest = {
     name: '{{AUTHOR}}',
     url: '{{AUTHOR_URL}}',
   },
-  entry: 'src/index.ts',
   license: 'MIT',
   tags: [],
 };

@@ -1,0 +1,21 @@
+{
+  "name": "{{PROJECT_NAME}}",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "biscotto dev",
+    "start": "biscotto start",
+    "stop": "biscotto stop",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@biscotto/core": "^1.4.0",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}

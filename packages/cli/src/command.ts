@@ -2,6 +2,8 @@
 
 export interface CommandContext {
   readonly args: string[];
+  readonly flags: string[];
+  readonly options: Record<string, string>;
   readonly root: string;
 }
 

@@ -25,12 +25,12 @@ cd my-bot
 npm install
 
 # Edit .env with your bot token
-# BOT_TOKEN=your_token_here
-# BOT_CLIENT_ID=your_client_id
-# BOT_GUILD_ID=your_guild_id
+# DISCORD_TOKEN=your_token_here
+# DISCORD_CLIENT_ID=your_client_id
+# DISCORD_GUILD_ID=your_guild_id
 
 # Start the bot
-biscotto start
+biscotto dev
 ```
 
 ## Project Structure
@@ -39,10 +39,11 @@ biscotto start
 my-bot/
   .biscotto/
     installed.json      # Installed modules registry
+  src/
+    index.ts            # Bot entry point
   modules/
     zero/               # Your first module
       manifest.ts       # Module metadata
-      registry.ts       # Commands and events
       index.ts          # Module entry point
       commands/
         ping.ts         # Slash command
@@ -50,9 +51,27 @@ my-bot/
         ready.ts        # Event listener
   .env                  # Environment variables
   package.json
+  tsconfig.json
 ```
 
 ## Creating a Module
+
+### Using the CLI
+
+```bash
+# Create a module with commands only
+biscotto create my-module
+
+# Create a module with all features
+biscotto create my-module --stack full
+
+# Available stacks:
+#   simple   - Commands only
+#   full     - Commands + buttons + modals + selects
+#   voice    - Commands + voice support
+#   storage  - Commands + storage integration
+#   moderate - Commands + buttons (moderation style)
+```
 
 ### manifest.ts
 
@@ -69,7 +88,6 @@ export const manifest: ModuleManifest = {
     name: 'YourName',
     url: 'https://github.com/yourname',
   },
-  entry: 'src/index.ts',
   license: 'MIT',
   tags: ['utility'],
 };
@@ -82,10 +100,10 @@ Create a slash command:
 ```typescript
 import { defineCommand } from '@biscotto/core';
 
-export default defineCommand({
+export const pingCommand = defineCommand({
   name: 'ping',
   description: 'Check bot responsiveness',
-  async execute(ctx) {
+  async run(ctx) {
     await ctx.reply('Pong!');
   },
 });
@@ -105,32 +123,15 @@ The `ctx` (CommandContext) provides:
 Listen to Discord events:
 
 ```typescript
-import { Events } from 'discord.js';
 import { defineEvent } from '@biscotto/core';
 
-export default defineEvent({
-  event: Events.ClientReady,
+export const onReady = defineEvent({
+  name: 'ready',
   once: true,
-  async execute(client) {
-    console.log(`Online as ${(client as any).user?.tag}`);
+  run(client) {
+    console.log(`Online as ${client.user?.tag}`);
   },
 });
-```
-
-### registry.ts
-
-Export your commands, buttons, modals, and events:
-
-```typescript
-import pingCommand from './commands/ping.ts';
-import confirmBtn from './components/confirm-btn.ts';
-import feedbackModal from './components/feedback-form.ts';
-import readyEvent from './listeners/ready.ts';
-
-export const commands = [pingCommand];
-export const buttons = [confirmBtn];
-export const modals = [feedbackModal];
-export const events = [readyEvent];
 ```
 
 ### index.ts
@@ -139,15 +140,14 @@ Bundle everything together:
 
 ```typescript
 import { defineModule } from '@biscotto/core';
-import { manifest } from './manifest.ts';
-import { commands, buttons, modals, events } from './registry.ts';
+import { manifest } from './manifest.js';
+import { pingCommand } from './commands/ping.js';
+import { onReady } from './listeners/ready.js';
 
 export default defineModule({
   manifest,
-  commands,
-  buttons,
-  modals,
-  events,
+  commands: [pingCommand],
+  events: [onReady],
 });
 ```
 
@@ -233,10 +233,10 @@ import {
   MessageFlags,
 } from 'discord.js';
 
-export default defineCommand({
+export const infoCommand = defineCommand({
   name: 'info',
   description: 'Show server info',
-  async execute(ctx) {
+  async run(ctx) {
     const container = new ContainerBuilder()
       .addTextDisplayComponents(
         new TextDisplayBuilder().setContent('# Server Info'),
@@ -263,10 +263,10 @@ Handle button interactions:
 import { defineCommand } from '@biscotto/core';
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 
-export default defineCommand({
+export const confirmCommand = defineCommand({
   name: 'confirm',
   description: 'Show a confirmation button',
-  async execute(ctx) {
+  async run(ctx) {
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setCustomId('confirm-yes')
@@ -285,20 +285,20 @@ export default defineCommand({
 // components/confirm-yes.ts
 import { defineButton } from '@biscotto/core';
 
-export default defineButton({
+export const confirmYesButton = defineButton({
   customId: 'confirm-yes',
-  async execute(ctx) {
-    await ctx.reply('Confirmed!');
+  run(ctx) {
+    ctx.reply('Confirmed!');
   },
 });
 
 // components/confirm-no.ts
 import { defineButton } from '@biscotto/core';
 
-export default defineButton({
+export const confirmNoButton = defineButton({
   customId: 'confirm-no',
-  async execute(ctx) {
-    await ctx.reply('Cancelled.');
+  run(ctx) {
+    ctx.reply('Cancelled.');
   },
 });
 ```
@@ -311,11 +311,16 @@ Handle select menu interactions:
 // components/role-select.ts
 import { defineSelectMenu } from '@biscotto/core';
 
-export default defineSelectMenu({
+export const roleSelect = defineSelectMenu({
   customId: 'role-select',
-  async execute(ctx) {
-    const selected = ctx.values; // selected option values
-    await ctx.reply(`You selected: ${selected.join(', ')}`);
+  type: 'string',
+  options: [
+    { label: 'Admin', value: 'admin' },
+    { label: 'Mod', value: 'mod' },
+    { label: 'User', value: 'user' },
+  ],
+  run(ctx) {
+    ctx.reply(`You selected: ${ctx.values.join(', ')}`);
   },
 });
 ```
@@ -329,10 +334,10 @@ Handle modal submissions:
 import { defineCommand } from '@biscotto/core';
 import { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from 'discord.js';
 
-export default defineCommand({
+export const feedbackCommand = defineCommand({
   name: 'feedback',
   description: 'Send feedback',
-  async execute(ctx) {
+  async run(ctx) {
     const modal = new ModalBuilder()
       .setCustomId('feedback-form')
       .setTitle('Feedback')
@@ -352,43 +357,14 @@ export default defineCommand({
 // components/feedback-form.ts
 import { defineModal } from '@biscotto/core';
 
-export default defineModal({
+export const feedbackModal = defineModal({
   customId: 'feedback-form',
-  async execute(ctx) {
-    const feedback = ctx.fields.getTextInputValue('feedback-input');
-    await ctx.reply(`Thanks: ${feedback}`);
-  },
-});
-```
-
-## Autocomplete
-
-Handle autocomplete interactions:
-
-```typescript
-// commands/search.ts
-import { defineCommand, defineAutocomplete } from '@biscotto/core';
-
-export default defineCommand({
-  name: 'search',
-  description: 'Search something',
-  async execute(ctx) {
-    await ctx.reply(`Searching for: ${ctx.interaction.options.getString('query')}`);
-  },
-});
-
-// autocomplete/search.ts
-import { defineAutocomplete } from '@biscotto/core';
-
-export default defineAutocomplete({
-  name: 'search',
-  async execute(ctx) {
-    const focused = ctx.options.getFocused();
-    const results = ['apple', 'banana', 'cherry']
-      .filter(f => f.startsWith(focused))
-      .map(f => ({ name: f, value: f }));
-
-    await ctx.respond(results);
+  fields: [
+    { type: 'paragraph', label: 'Feedback', required: true },
+  ],
+  run(ctx) {
+    const feedback = ctx.fields.get('Feedback');
+    ctx.reply(`Thanks: ${feedback}`);
   },
 });
 ```
@@ -401,25 +377,53 @@ Right-click user or message context menus:
 // context-menus/quick-ban.ts
 import { defineUserContextMenu } from '@biscotto/core';
 
-export default defineUserContextMenu({
+export const quickBan = defineUserContextMenu({
   name: 'Quick Ban',
-  async execute(ctx) {
+  async run(ctx) {
     const member = ctx.interaction.guild?.members.cache.get(ctx.targetUser.id);
     if (member?.bannable) {
       await member.ban();
-      await ctx.reply(`Banned ${ctx.targetUser.tag}`);
+      ctx.reply(`Banned ${ctx.targetUser.tag}`);
     } else {
-      await ctx.reply('Cannot ban this user.', { ephemeral: true });
+      ctx.reply('Cannot ban this user.', { ephemeral: true });
     }
   },
 });
+```
+
+## Publishing Your Module
+
+### Validate
+
+```bash
+# Check if your module is ready
+biscotto pack my-module
+```
+
+### Publish
+
+```bash
+# Publish to GitHub
+biscotto publish my-module
+
+# Publish with private repo
+biscotto publish my-module --private
+
+# Dry run (validation only)
+biscotto publish my-module --dry-run
+
+# Include registry submission instructions
+biscotto publish my-module --registry
 ```
 
 ## CLI Commands
 
 | Command | Description |
 |---------|-------------|
-| `biscotto init` | Initialize a new project |
+| `biscotto init <name>` | Initialize a new project |
+| `biscotto create <name>` | Create a new module |
+| `biscotto pack <module>` | Validate a module |
+| `biscotto publish <module>` | Publish a module |
 | `biscotto dev` | Start bot with hot reload |
 | `biscotto add <source>` | Install a module from GitHub |
 | `biscotto remove <name>` | Uninstall a module |
