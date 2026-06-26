@@ -123,9 +123,7 @@ jobs:
 
       - name: Publish to npm
         if: ${{ inputs.dry-run == false }}
-        run: |
-          npm publish --workspaces --access public
-          npm publish --access public
+        run: npm publish --workspaces --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
