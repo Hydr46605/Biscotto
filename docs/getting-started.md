@@ -119,13 +119,17 @@ export default defineEvent({
 
 ### registry.ts
 
-Export your commands and events:
+Export your commands, buttons, modals, and events:
 
 ```typescript
 import pingCommand from './commands/ping.ts';
+import confirmBtn from './components/confirm-btn.ts';
+import feedbackModal from './components/feedback-form.ts';
 import readyEvent from './listeners/ready.ts';
 
 export const commands = [pingCommand];
+export const buttons = [confirmBtn];
+export const modals = [feedbackModal];
 export const events = [readyEvent];
 ```
 
@@ -136,11 +140,13 @@ Bundle everything together:
 ```typescript
 import { defineModule } from '@biscotto/core';
 import { manifest } from './manifest.ts';
-import { commands, events } from './registry.ts';
+import { commands, buttons, modals, events } from './registry.ts';
 
 export default defineModule({
   manifest,
   commands,
+  buttons,
+  modals,
   events,
 });
 ```
@@ -248,11 +254,173 @@ export default defineCommand({
 });
 ```
 
+## Buttons
+
+Handle button interactions:
+
+```typescript
+// commands/confirm.ts
+import { defineCommand } from '@biscotto/core';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+
+export default defineCommand({
+  name: 'confirm',
+  description: 'Show a confirmation button',
+  async execute(ctx) {
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setCustomId('confirm-yes')
+        .setLabel('Yes')
+        .setStyle(ButtonStyle.Primary),
+      new ButtonBuilder()
+        .setCustomId('confirm-no')
+        .setLabel('No')
+        .setStyle(ButtonStyle.Secondary),
+    );
+
+    await ctx.interaction.reply({ components: [row] });
+  },
+});
+
+// components/confirm-yes.ts
+import { defineButton } from '@biscotto/core';
+
+export default defineButton({
+  customId: 'confirm-yes',
+  async execute(ctx) {
+    await ctx.reply('Confirmed!');
+  },
+});
+
+// components/confirm-no.ts
+import { defineButton } from '@biscotto/core';
+
+export default defineButton({
+  customId: 'confirm-no',
+  async execute(ctx) {
+    await ctx.reply('Cancelled.');
+  },
+});
+```
+
+## Select Menus
+
+Handle select menu interactions:
+
+```typescript
+// components/role-select.ts
+import { defineSelectMenu } from '@biscotto/core';
+
+export default defineSelectMenu({
+  customId: 'role-select',
+  async execute(ctx) {
+    const selected = ctx.values; // selected option values
+    await ctx.reply(`You selected: ${selected.join(', ')}`);
+  },
+});
+```
+
+## Modals
+
+Handle modal submissions:
+
+```typescript
+// commands/feedback.ts
+import { defineCommand } from '@biscotto/core';
+import { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from 'discord.js';
+
+export default defineCommand({
+  name: 'feedback',
+  description: 'Send feedback',
+  async execute(ctx) {
+    const modal = new ModalBuilder()
+      .setCustomId('feedback-form')
+      .setTitle('Feedback')
+      .addComponents(
+        new ActionRowBuilder<TextInputBuilder>().addComponents(
+          new TextInputBuilder()
+            .setCustomId('feedback-input')
+            .setLabel('Your feedback')
+            .setStyle(TextInputStyle.Paragraph),
+        ),
+      );
+
+    await ctx.interaction.showModal(modal);
+  },
+});
+
+// components/feedback-form.ts
+import { defineModal } from '@biscotto/core';
+
+export default defineModal({
+  customId: 'feedback-form',
+  async execute(ctx) {
+    const feedback = ctx.fields.getTextInputValue('feedback-input');
+    await ctx.reply(`Thanks: ${feedback}`);
+  },
+});
+```
+
+## Autocomplete
+
+Handle autocomplete interactions:
+
+```typescript
+// commands/search.ts
+import { defineCommand, defineAutocomplete } from '@biscotto/core';
+
+export default defineCommand({
+  name: 'search',
+  description: 'Search something',
+  async execute(ctx) {
+    await ctx.reply(`Searching for: ${ctx.interaction.options.getString('query')}`);
+  },
+});
+
+// autocomplete/search.ts
+import { defineAutocomplete } from '@biscotto/core';
+
+export default defineAutocomplete({
+  name: 'search',
+  async execute(ctx) {
+    const focused = ctx.options.getFocused();
+    const results = ['apple', 'banana', 'cherry']
+      .filter(f => f.startsWith(focused))
+      .map(f => ({ name: f, value: f }));
+
+    await ctx.respond(results);
+  },
+});
+```
+
+## Context Menus
+
+Right-click user or message context menus:
+
+```typescript
+// context-menus/quick-ban.ts
+import { defineUserContextMenu } from '@biscotto/core';
+
+export default defineUserContextMenu({
+  name: 'Quick Ban',
+  async execute(ctx) {
+    const member = ctx.interaction.guild?.members.cache.get(ctx.targetUser.id);
+    if (member?.bannable) {
+      await member.ban();
+      await ctx.reply(`Banned ${ctx.targetUser.tag}`);
+    } else {
+      await ctx.reply('Cannot ban this user.', { ephemeral: true });
+    }
+  },
+});
+```
+
 ## CLI Commands
 
 | Command | Description |
 |---------|-------------|
 | `biscotto init` | Initialize a new project |
+| `biscotto dev` | Start bot with hot reload |
 | `biscotto add <source>` | Install a module from GitHub |
 | `biscotto remove <name>` | Uninstall a module |
 | `biscotto list` | List installed modules |

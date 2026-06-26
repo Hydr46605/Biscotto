@@ -56,19 +56,34 @@ biscotto start
 ## Creating a Module
 
 ```typescript
-import { defineCommand, defineModule } from '@biscotto/core';
+import { defineCommand, defineButton, defineModule } from '@biscotto/core';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 
-const ping = defineCommand({
-  name: 'ping',
-  description: 'Check bot responsiveness',
+const greet = defineCommand({
+  name: 'greet',
+  description: 'Say hello with a button',
   async execute(ctx) {
-    await ctx.reply('Pong!');
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setCustomId('greet-btn')
+        .setLabel('Say Hello')
+        .setStyle(ButtonStyle.Primary),
+    );
+    await ctx.interaction.reply({ components: [row] });
+  },
+});
+
+const greetBtn = defineButton({
+  customId: 'greet-btn',
+  async execute(ctx) {
+    await ctx.reply(`Hello ${ctx.interaction.user.tag}!`);
   },
 });
 
 export default defineModule({
   manifest: { name: 'my-module', version: '1.0.0' },
-  commands: [ping],
+  commands: [greet],
+  buttons: [greetBtn],
 });
 ```
 
@@ -77,6 +92,7 @@ export default defineModule({
 | Command | Description |
 |---------|-------------|
 | `biscotto init` | Initialize a new project |
+| `biscotto dev` | Start bot with hot reload |
 | `biscotto add <source>` | Install a module |
 | `biscotto remove <name>` | Uninstall a module |
 | `biscotto list` | List installed modules |

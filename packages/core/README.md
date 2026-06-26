@@ -32,19 +32,27 @@ run(env);
 - Components V2 support for all Discord messages
 - Guild-specific command deployment
 - Modular storage (JSON, SQLite, YAML, MySQL)
-- `defineCommand`, `defineEvent`, `defineModule` helpers
+- `defineCommand`, `defineButton`, `defineSelectMenu`, `defineModal`, `defineAutocomplete`, `defineUserContextMenu`, `defineMessageContextMenu`, `defineEvent`, `defineModule` helpers
+- InteractionRouter with custom ID matching
 - Declarative intents
 
 ## Module Contract
 
 ```typescript
-import { defineModule, defineCommand } from '@biscotto/core';
+import { defineModule, defineCommand, defineButton } from '@biscotto/core';
 
 const hello = defineCommand({
   name: 'hello',
   description: 'Say hello',
   async execute(ctx) {
     await ctx.reply('Hello!');
+  },
+});
+
+const helloBtn = defineButton({
+  customId: 'hello-btn',
+  async execute(ctx) {
+    await ctx.reply('Button clicked!');
   },
 });
 
@@ -55,5 +63,6 @@ export default defineModule({
     author: { name: 'Your Name' },
   },
   commands: [hello],
+  buttons: [helloBtn],
 });
 ```
