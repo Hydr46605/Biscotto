@@ -1,8 +1,11 @@
 ## What's Changed
 
 ### 📦 Other Changes
-- release: v1.2.0 (e762fb4)
-- fix(cli): include templates directory in npm package files (d77fdf1)
-- feat(core): add defineButton, defineSelectMenu, defineModal, defineAutocomplete, defineContextMenu helpers with InteractionRouter (fa7b85b)
+- fix(ci): add --allow-same-version to release workflow (3da51ed)
+- release: v1.4.0 (5c80c16)
+- feat(cli): add biscotto dev command with hot reload (93f7cb2)
+- feat(core): add middleware system with cooldowns and permissions (be7d0bd)
+- docs: add Phase 2 examples (buttons, modals, select menus, autocomplete, context menus) (b364fa0)
+- fix(ci): accept specific version string instead of bump type in release workflow (edb8fbf)
 
-**Full Changelog**: https://github.com/Hydr46605/Biscotto/compare/v1.1.0...v1.3.0
+**Full Changelog**: https://github.com/Hydr46605/Biscotto/compare/v1.3.0...v1.4.0
