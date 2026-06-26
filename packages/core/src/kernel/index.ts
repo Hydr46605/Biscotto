@@ -10,6 +10,8 @@ export { validateManifest, loadManifest, ManifestError } from './validation.ts';
 export { InstalledRegistry } from './registry.ts';
 export { resolveDependencies, checkDependencies, DependencyError } from './resolver.ts';
 export { loadFromDisk, discoverModules } from './discovery.ts';
+export { defineCommand, defineEvent, defineModule } from './define.ts';
+export type { CommandContext, CommandConfig, EventConfig, ModuleConfig } from './define.ts';
 export type { InstalledModule, InstalledFile } from './registry.ts';
 export type { ResolvedModule } from './resolver.ts';
 export type { LoadResult, LoadError } from './discovery.ts';

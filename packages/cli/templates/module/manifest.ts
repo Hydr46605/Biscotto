@@ -1,4 +1,4 @@
-import type { ModuleManifest } from '@biscotto/core/contracts';
+import type { ModuleManifest } from '@biscotto/core';
 
 export const manifest: ModuleManifest = {
   name: '{{MODULE_NAME}}',

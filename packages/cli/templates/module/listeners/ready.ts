@@ -1,13 +1,10 @@
-import { Events, type Client } from 'discord.js';
-import type { EventDefinition } from '../../../contracts/module.contract.ts';
-import { LitLogger } from '../../../kernel/logger.ts';
+import { Events } from 'discord.js';
+import { defineEvent } from '@biscotto/core';
 
-async function execute(client: Client): Promise<void> {
-  LitLogger.info('{{MODULE_NAME}}', `Biscotto is online as ${client.user?.tag}`);
-}
-
-export const readyEvent: EventDefinition = {
+export default defineEvent({
   event: Events.ClientReady,
   once: true,
-  execute,
-};
+  async execute(client) {
+    console.log(`[{{MODULE_NAME}}] Biscotto is online as ${(client as any).user?.tag}`);
+  },
+});

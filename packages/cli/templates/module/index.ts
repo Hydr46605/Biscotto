@@ -1,8 +1,8 @@
-import { defineModule } from '../../kernel/define.ts';
+import { defineModule } from '@biscotto/core';
 import { manifest } from './manifest.ts';
 import { commands, events } from './registry.ts';
 
-export const zeroModule = defineModule({
+export default defineModule({
   manifest,
   commands,
   events,

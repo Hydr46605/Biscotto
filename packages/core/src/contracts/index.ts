@@ -2,8 +2,7 @@ export type {
   ModuleAuthor,
   ModuleManifest,
   BiscottoManifest,
-  CommandDefinition,
-  EventDefinition,
-  ModuleRegistration,
   BiscottoModule,
 } from './module.contract.ts';
+
+export type { CommandDefinition, EventDefinition, ModuleRegistration } from './module.contract.ts';

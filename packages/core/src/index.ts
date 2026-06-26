@@ -7,23 +7,25 @@ import { modules as builtinModules } from './modules/index.ts';
 // Global storage instance accessible from any module
 export let storage: StorageManager;
 
+// Re-export API helpers for module authors
+export { defineCommand, defineEvent, defineModule } from './kernel/define.ts';
+export type { CommandContext, CommandConfig, EventConfig, ModuleConfig } from './kernel/define.ts';
+export type { ModuleManifest, BiscottoModule } from './contracts/module.contract.ts';
+
 async function bootstrap(): Promise<void> {
   LitLogger.banner();
   LitLogger.info('Bootstrap', 'Initializing Biscotto...');
 
-  const client = createClient();
-  const loader = new ModuleLoader(client);
+  const loader = new ModuleLoader();
   const registrar = new CommandRegistrar();
-  const dispatcher = new CommandDispatcher(client);
 
   // Initialize storage
   storage = new StorageManager(config.storage);
   await LitLogger.measure('Storage', 'Initialization', () => storage.init());
 
-  // Load builtin modules (zero)
+  // Load all modules (collects commands, events, intents without client)
   await LitLogger.measure('Bootstrap', 'Builtin modules', () => loader.loadAll(builtinModules));
 
-  // Load external modules from .biscotto/modules/
   const modulesDir = resolve(process.cwd(), '.biscotto', 'modules');
   const { modules: externalModules, errors } = await loadFromDisk(modulesDir, builtinModules);
 
@@ -35,6 +37,13 @@ async function bootstrap(): Promise<void> {
     await LitLogger.measure('Bootstrap', 'External modules', () => loader.loadAll(externalModules));
   }
 
+  // Merge intents from all modules and create the real client
+  const extraIntents = loader.getIntents();
+  const client = createClient(extraIntents);
+
+  // Initialize all modules with the real client
+  await LitLogger.measure('Bootstrap', 'Module init', () => loader.initAll(client));
+
   // Register commands with Discord API
   const commands = loader.getCommands();
   if (commands.length > 0) {
@@ -42,6 +51,7 @@ async function bootstrap(): Promise<void> {
   }
 
   // Setup interaction dispatcher
+  const dispatcher = new CommandDispatcher(client);
   dispatcher.register(commands);
   dispatcher.listen();
 

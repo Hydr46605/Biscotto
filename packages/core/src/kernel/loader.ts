@@ -1,19 +1,22 @@
-import type { Client } from 'discord.js';
+import type { Client, GatewayIntentBits } from 'discord.js';
 import type { BiscottoModule, CommandDefinition, EventDefinition } from '../contracts/module.contract.ts';
 import { LitLogger } from './logger.ts';
 
 interface LoadedModule {
-  instance: BiscottoModule;
+  instance: BiscottoModule & { intents?: GatewayIntentBits[] };
   commands: CommandDefinition[];
   events: EventDefinition[];
 }
 
+type ModuleLike = BiscottoModule & { intents?: GatewayIntentBits[] };
+
 export class ModuleLoader {
   private loaded: LoadedModule[] = [];
+  private client: Client | null = null;
 
-  constructor(private readonly client: Client) {}
+  async loadAll(modules: ModuleLike[], client?: Client): Promise<void> {
+    if (client) this.client = client;
 
-  async loadAll(modules: BiscottoModule[]): Promise<void> {
     LitLogger.info('Loader', `Discovering ${modules.length} module(s)...`);
 
     for (const mod of modules) {
@@ -25,7 +28,7 @@ export class ModuleLoader {
     LitLogger.info('Loader', `Loaded ${this.loaded.length} module(s) \u2014 ${totalCmds} command(s), ${totalEvts} event(s)`);
   }
 
-  private async load(mod: BiscottoModule): Promise<void> {
+  private async load(mod: ModuleLike): Promise<void> {
     const { manifest } = mod;
 
     if (manifest.dependencies) {
@@ -44,7 +47,7 @@ export class ModuleLoader {
 
       this.loaded.push({ instance: mod, commands: cmds, events: evts });
 
-      if (mod.onInit) {
+      if (mod.onInit && this.client) {
         await mod.onInit(this.client);
       }
 
@@ -67,6 +70,26 @@ export class ModuleLoader {
 
   getEvents(): EventDefinition[] {
     return this.loaded.flatMap((m) => m.events);
+  }
+
+  getIntents(): GatewayIntentBits[] {
+    const seen = new Set<GatewayIntentBits>();
+    for (const mod of this.loaded) {
+      const intents = mod.instance.intents ?? [];
+      for (const intent of intents) {
+        seen.add(intent);
+      }
+    }
+    return [...seen];
+  }
+
+  async initAll(client: Client): Promise<void> {
+    this.client = client;
+    for (const mod of this.loaded) {
+      if (mod.instance.onInit) {
+        await mod.instance.onInit(client);
+      }
+    }
   }
 
   async destroyAll(): Promise<void> {
