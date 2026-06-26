@@ -1,6 +1,6 @@
 {
   "name": "@biscotto/cli",
-  "version": "1.1.0",
+  "version": "1.0.2",
   "description": "CLI for managing Biscotto Discord bot",
   "author": "Hydr46605 <https://github.com/Hydr46605>",
   "repository": {
