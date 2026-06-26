@@ -28,10 +28,10 @@ npm run dev
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| `@biscotto/core` | Bot framework with dynamic module loading |
-| `@biscotto/cli` | CLI for managing modules and processes |
+| Package | Description | Install |
+|---------|-------------|---------|
+| [`@biscotto/core`](https://www.npmjs.com/package/@biscotto/core) | Bot framework with dynamic module loading | `npm i @biscotto/core` |
+| [`@biscotto/cli`](https://www.npmjs.com/package/@biscotto/cli) | CLI for managing modules and processes | `npm i -g @biscotto/cli` |
 
 ## Module System
 
