@@ -7,13 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version bump type'
+        description: 'Version (e.g. 1.2.0)'
         required: true
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
+        type: string
       dry-run:
         description: 'Dry run (no publish)'
         required: false
@@ -53,13 +49,12 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Bump version
+      - name: Set version
         id: bump
         run: |
           npm version ${{ inputs.version }} --workspaces --no-git-tag-version
           npm version ${{ inputs.version }} --no-git-tag-version
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
 
       - name: Generate changelog
         id: changelog
