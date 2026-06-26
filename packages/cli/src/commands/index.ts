@@ -3,6 +3,7 @@ import { initCommand } from './init.ts';
 import { addCommand } from './add.ts';
 import { removeCommand } from './remove.ts';
 import { listCommand } from './list.ts';
+import { devCommand } from './dev.ts';
 import { startCommand } from './start.ts';
 import { stopCommand } from './stop.ts';
 import { restartCommand } from './restart.ts';
@@ -15,6 +16,7 @@ export const commands: Command[] = [
   addCommand,
   removeCommand,
   listCommand,
+  devCommand,
   startCommand,
   stopCommand,
   restartCommand,
