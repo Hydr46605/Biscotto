@@ -1,0 +1,138 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      dry-run:
+        description: 'Dry run (no publish)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Bump version
+        id: bump
+        run: |
+          npm version ${{ inputs.version }} --workspaces --no-git-tag-version
+          npm version ${{ inputs.version }} --no-git-tag-version
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s (%h)" HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"- %s (%h)" "$LAST_TAG"..HEAD)
+          fi
+
+          # Categorize commits
+          FEATURES=$(echo "$COMMITS" | grep -i "^[^-]*feat" || true)
+          FIXES=$(echo "$COMMITS" | grep -i "^[^-]*fix" || true)
+          OTHER=$(echo "$COMMITS" | grep -iv "^[^-]*feat\|^[^-]*fix\|^[^-]*BREAKING" || true)
+
+          # Build changelog
+          {
+            echo "## What's Changed"
+            echo ""
+            if [ -n "$FEATURES" ]; then
+              echo "### ✨ Features"
+              echo "$FEATURES"
+              echo ""
+            fi
+            if [ -n "$FIXES" ]; then
+              echo "### 🐛 Bug Fixes"
+              echo "$FIXES"
+              echo ""
+            fi
+            if [ -n "$OTHER" ]; then
+              echo "### 📦 Other Changes"
+              echo "$OTHER"
+              echo ""
+            fi
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${LAST_TAG:-$(git rev-list --max-parents=0 HEAD | head -1)}...v${{ steps.bump.outputs.version }}"
+          } > CHANGELOG_BODY.md
+
+          cat CHANGELOG_BODY.md
+
+      - name: Commit and tag
+        run: |
+          git add -A
+          git commit -m "release: v${{ steps.bump.outputs.version }}"
+          git tag "v${{ steps.bump.outputs.version }}"
+
+      - name: Push
+        run: |
+          git push
+          git push --tags
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.bump.outputs.version }}
+          name: v${{ steps.bump.outputs.version }}
+          body_path: CHANGELOG_BODY.md
+          draft: false
+          prerelease: false
+
+      - name: Publish to npm
+        if: ${{ inputs.dry-run == false }}
+        run: |
+          npm publish --workspaces --access public
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## 🍪 Release v${{ steps.bump.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Version**: v${{ steps.bump.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Tag**: \`v${{ steps.bump.outputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Published**: ${{ inputs.dry-run == false && 'Yes' || 'Dry run' }}" >> "$GITHUB_STEP_SUMMARY"
