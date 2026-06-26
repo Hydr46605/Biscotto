@@ -20,11 +20,18 @@ A modular Discord bot framework with package management. Install modules from Gi
 ## Quick Start
 
 ```bash
-git clone https://github.com/Hydr46605/Biscotto.git
-cd Biscotto
+npm install -g @biscotto/cli
+biscotto init my-bot
+cd my-bot
 npm install
-npm run dev
+# edit .env with your bot token
+biscotto start
 ```
+
+## Documentation
+
+- **[Getting Started](docs/getting-started.md)** ~ setup, first module, commands, events, storage
+- **[Core API](packages/core/README.md)** ~ framework internals
 
 ## Packages
 
@@ -49,14 +56,20 @@ biscotto start
 ## Creating a Module
 
 ```typescript
-import type { BiscottoModule } from '@biscotto/core/contracts';
+import { defineCommand, defineModule } from '@biscotto/core';
 
-export default {
-  manifest: { name: 'my-module', version: '1.0.0' },
-  register() {
-    return { commands: [], events: [] };
+const ping = defineCommand({
+  name: 'ping',
+  description: 'Check bot responsiveness',
+  async execute(ctx) {
+    await ctx.reply('Pong!');
   },
-} satisfies BiscottoModule;
+});
+
+export default defineModule({
+  manifest: { name: 'my-module', version: '1.0.0' },
+  commands: [ping],
+});
 ```
 
 ## CLI Commands

@@ -32,28 +32,28 @@ run(env);
 - Components V2 support for all Discord messages
 - Guild-specific command deployment
 - Modular storage (JSON, SQLite, YAML, MySQL)
+- `defineCommand`, `defineEvent`, `defineModule` helpers
+- Declarative intents
 
 ## Module Contract
 
 ```typescript
-import type { BiscottoModule } from '@biscotto/core/contracts';
+import { defineModule, defineCommand } from '@biscotto/core';
 
-export default {
+const hello = defineCommand({
+  name: 'hello',
+  description: 'Say hello',
+  async execute(ctx) {
+    await ctx.reply('Hello!');
+  },
+});
+
+export default defineModule({
   manifest: {
     name: 'my-module',
     version: '1.0.0',
-    author: 'Your Name',
-    entry: 'registry',
-    build: { type: 'typescript', outdir: 'dist' },
-    engine: { discord.js: '^14.0.0' },
-    dependencies: {},
+    author: { name: 'Your Name' },
   },
-  register() {
-    return { commands: [], events: [] };
-  },
-} satisfies BiscottoModule;
+  commands: [hello],
+});
 ```
-
-## Author
-
-**Hydr46605** — [github.com/Hydr46605](https://github.com/Hydr46605)
