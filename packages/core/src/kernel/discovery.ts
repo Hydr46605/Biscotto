@@ -1,5 +1,6 @@
 import { readdirSync, existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import type { Client } from 'discord.js';
 import type { BiscottoModule, ModuleManifest } from '../contracts/module.contract.ts';
 import { loadManifest, ManifestError } from './validation.ts';
@@ -162,7 +163,7 @@ export async function loadFromDisk(
   for (const mod of ordered) {
     try {
       const modulePath = resolve(mod.path, mod.manifest.entry ?? 'dist/index.js');
-      const imported = await import(modulePath);
+      const imported = await import(pathToFileURL(modulePath).href);
 
       // The module should export a default BiscottoModule or a named export
       const biscottoMod: BiscottoModule | undefined =
