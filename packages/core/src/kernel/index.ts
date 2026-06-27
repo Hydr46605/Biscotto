@@ -23,7 +23,7 @@ export { PermissionChecker } from './middleware/permissions.ts';
 export { MiddlewarePipeline } from './middleware/pipeline.ts';
 export { ServiceRegistry } from './services.ts';
 export { ModuleLifecycle, ModuleState } from './lifecycle.ts';
-export { ModuleData, defineConfig } from './module-config.ts';
+export { ModuleData, defineConfig } from './data.ts';
 export {
   defineCommand,
   defineButton,
@@ -61,4 +61,4 @@ export type { MiddlewareConfig, MiddlewareResult } from './middleware/pipeline.t
 export type { PermissionString } from './middleware/permissions.ts';
 export type { ServiceInfo } from './services.ts';
 export type { ModuleContext, LifecycleHooks } from './lifecycle.ts';
-export type { ConfigSchema, ConfigField, ModuleConfig as ModuleConfigType } from './module-config.ts';
+export type { ConfigSchema, ConfigField, ModuleConfig as ModuleConfigType } from './data.ts';

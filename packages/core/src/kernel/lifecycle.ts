@@ -1,7 +1,7 @@
 import type { Client } from 'discord.js';
 import { LitLogger } from './logger.ts';
 import type { ServiceRegistry } from './services.ts';
-import type { ModuleData } from './module-config.ts';
+import type { ModuleData } from './data.ts';
 import type { StorageProvider } from './storage/types.ts';
 
 // ── Module State ──────────────────────────────────────────────────────────────

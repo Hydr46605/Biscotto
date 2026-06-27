@@ -13,7 +13,7 @@ import type {
 import { LitLogger } from './logger.ts';
 import { ServiceRegistry } from './services.ts';
 import { ModuleLifecycle, ModuleState, type ModuleContext } from './lifecycle.ts';
-import { ModuleData } from './module-config.ts';
+import { ModuleData } from './data.ts';
 import { StorageManager } from './storage/manager.ts';
 import type { StorageProvider } from './storage/types.ts';
 

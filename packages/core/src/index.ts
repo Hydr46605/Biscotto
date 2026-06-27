@@ -39,8 +39,8 @@ export { ServiceRegistry } from './kernel/services.ts';
 export type { ServiceInfo } from './kernel/services.ts';
 export { ModuleLifecycle, ModuleState } from './kernel/lifecycle.ts';
 export type { ModuleContext } from './kernel/lifecycle.ts';
-export { ModuleData, defineConfig } from './kernel/module-config.ts';
-export type { ConfigSchema, ConfigField } from './kernel/module-config.ts';
+export { ModuleData, defineConfig } from './kernel/data.ts';
+export type { ConfigSchema, ConfigField } from './kernel/data.ts';
 export type { StorageProvider, StorageDriver } from './kernel/storage/types.ts';
 
 async function bootstrap(): Promise<void> {
