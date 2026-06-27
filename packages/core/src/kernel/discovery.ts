@@ -1,4 +1,4 @@
-import { readdirSync, existsSync } from 'node:fs';
+import { readdirSync, existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Client } from 'discord.js';
 import type { BiscottoModule, ModuleManifest } from '../contracts/module.contract.ts';
@@ -16,6 +16,29 @@ export interface LoadResult {
 export interface LoadError {
   readonly name: string;
   readonly error: string;
+}
+
+// ── Installed File ────────────────────────────────────────────────────────────
+
+interface InstalledFile {
+  version: number;
+  modules: Record<string, { enabled?: boolean }>;
+}
+
+function readInstalledFile(root: string): InstalledFile {
+  const file = resolve(root, '.biscotto', 'installed.json');
+  if (!existsSync(file)) return { version: 1, modules: {} };
+  try {
+    return JSON.parse(readFileSync(file, 'utf-8'));
+  } catch {
+    return { version: 1, modules: {} };
+  }
+}
+
+function isModuleEnabled(installed: InstalledFile, name: string): boolean {
+  const mod = installed.modules[name];
+  if (!mod) return true; // Not in installed.json = builtin, always enabled
+  return mod.enabled !== false;
 }
 
 // ── Dynamic Loader ────────────────────────────────────────────────────────────
@@ -70,6 +93,7 @@ export function discoverModules(modulesDir: string): ResolvedModule[] {
 /**
  * Resolve dependencies and load all discovered modules.
  * Returns successfully loaded modules and any errors encountered.
+ * Respects the enabled flag in installed.json.
  */
 export async function loadFromDisk(
   modulesDir: string,
@@ -82,16 +106,34 @@ export async function loadFromDisk(
     return { modules: [], errors: [] };
   }
 
+  // Read installed.json to check enabled status
+  const root = resolve(modulesDir, '..', '..');
+  const installed = readInstalledFile(root);
+
+  // Filter out disabled modules
+  const enabledModules = discovered.filter((mod) => {
+    if (!isModuleEnabled(installed, mod.manifest.name)) {
+      LitLogger.info('DynLoader', `Skipping disabled module: ${mod.manifest.name}`);
+      return false;
+    }
+    return true;
+  });
+
+  if (enabledModules.length === 0) {
+    LitLogger.info('DynLoader', 'No enabled external modules found');
+    return { modules: [], errors: [] };
+  }
+
   // Check dependencies before resolving
   const available = new Set([
     ...builtinModules.map((m) => m.manifest.name),
-    ...discovered.map((m) => m.manifest.name),
+    ...enabledModules.map((m) => m.manifest.name),
   ]);
 
   const validModules: ResolvedModule[] = [];
   const errors: LoadError[] = [];
 
-  for (const mod of discovered) {
+  for (const mod of enabledModules) {
     const missing = checkDependencies(mod.manifest, available, BUILTIN_NAMES);
     if (missing.length > 0) {
       const msg = `Missing dependencies: ${missing.join(', ')}`;

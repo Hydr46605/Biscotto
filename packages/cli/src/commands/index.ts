@@ -13,6 +13,9 @@ import { updateCommand } from './update.ts';
 import { searchCommand } from './search.ts';
 import { packCommand } from './pack.ts';
 import { publishCommand } from './publish.ts';
+import { enableCommand } from './enable.ts';
+import { disableCommand } from './disable.ts';
+import { reloadCommand } from './reload.ts';
 
 export const commands: Command[] = [
   initCommand,
@@ -29,4 +32,7 @@ export const commands: Command[] = [
   searchCommand,
   packCommand,
   publishCommand,
+  enableCommand,
+  disableCommand,
+  reloadCommand,
 ];

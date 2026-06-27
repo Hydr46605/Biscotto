@@ -26,10 +26,13 @@ biscotto <command> [options]
 | `add <source>` | Install a module from GitHub |
 | `remove <name>` | Uninstall a module |
 | `list` | List installed modules |
+| `enable <module>` | Enable a module |
+| `disable <module>` | Disable a module |
+| `reload <module>` | Reload a module |
 | `start` | Start bot in background process |
 | `stop` | Stop the bot process |
 | `restart` | Restart the bot |
-| `status` | Show bot process status |
+| `status [module]` | Show bot/module status |
 | `update <name>` | Update a module to latest version |
 | `search <query>` | Search the BiscottoRegistry |
 
@@ -60,17 +63,21 @@ biscotto create my-module --stack full
 #   moderate - Commands + buttons (moderation style)
 ```
 
-## Publishing Modules
+## Module Management
 
 ```bash
-# Validate your module
+# Enable/disable modules
+biscotto enable shop
+biscotto disable shop
+
+# Check module status
+biscotto status shop
+
+# Validate before publishing
 biscotto pack my-module
 
 # Publish to GitHub
 biscotto publish my-module
-
-# Dry run (validation only)
-biscotto publish my-module --dry-run
 ```
 
 ## Project Structure

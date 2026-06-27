@@ -10,4 +10,7 @@ export const manifest: ModuleManifest = {
   },
   license: 'MIT',
   tags: [],
+  // dependencies: { 'other-module': '^1.0.0' },
+  // provides: ['my-service'],
+  // requires: ['other-service'],
 };

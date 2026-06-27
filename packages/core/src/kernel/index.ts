@@ -9,11 +9,20 @@ export { ProcessManager } from './process.ts';
 export { StorageManager, NamespacedStorage } from './storage/index.ts';
 export { validateManifest, loadManifest, ManifestError } from './validation.ts';
 export { InstalledRegistry } from './registry.ts';
-export { resolveDependencies, checkDependencies, DependencyError } from './resolver.ts';
+export {
+  resolveDependencies,
+  checkDependencies,
+  checkVersionConstraints,
+  buildDependencyGraph,
+  checkServiceRequirements,
+  DependencyError,
+} from './resolver.ts';
 export { loadFromDisk, discoverModules } from './discovery.ts';
 export { CooldownManager } from './middleware/cooldown.ts';
 export { PermissionChecker } from './middleware/permissions.ts';
 export { MiddlewarePipeline } from './middleware/pipeline.ts';
+export { ServiceRegistry } from './services.ts';
+export { ModuleLifecycle, ModuleState } from './lifecycle.ts';
 export {
   defineCommand,
   defineButton,
@@ -49,3 +58,5 @@ export type { LoadResult, LoadError } from './discovery.ts';
 export type { StorageConfig, StorageProvider, StorageDriver } from './storage/types.ts';
 export type { MiddlewareConfig, MiddlewareResult } from './middleware/pipeline.ts';
 export type { PermissionString } from './middleware/permissions.ts';
+export type { ServiceInfo } from './services.ts';
+export type { ModuleContext, LifecycleHooks } from './lifecycle.ts';

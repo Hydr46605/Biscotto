@@ -97,6 +97,7 @@ export const addCommand: Command = {
       source,
       version: manifest.version,
       installedAt: new Date().toISOString(),
+      enabled: true,
     };
     writeInstalled(ctx.root, installed);
 

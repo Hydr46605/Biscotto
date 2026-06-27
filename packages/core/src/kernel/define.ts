@@ -27,6 +27,7 @@ import type {
   ModuleManifest,
   BiscottoModuleWithIntents,
 } from '../contracts/module.contract.ts';
+import type { ModuleContext } from './lifecycle.ts';
 
 // ── Shared Helpers ────────────────────────────────────────────────────────────
 
@@ -363,6 +364,10 @@ export interface ModuleConfig {
   events?: EventDefinition[];
   onInit?(client: Client): Promise<void> | void;
   onDestroy?(): Promise<void> | void;
+  onLoad?(ctx: ModuleContext): Promise<void> | void;
+  onEnable?(ctx: ModuleContext): Promise<void> | void;
+  onDisable?(ctx: ModuleContext): Promise<void> | void;
+  onUnload?(ctx: ModuleContext): Promise<void> | void;
 }
 
 export function defineModule(config: ModuleConfig): BiscottoModuleWithIntents {
@@ -383,5 +388,9 @@ export function defineModule(config: ModuleConfig): BiscottoModuleWithIntents {
     },
     onInit: config.onInit,
     onDestroy: config.onDestroy,
+    onLoad: config.onLoad,
+    onEnable: config.onEnable,
+    onDisable: config.onDisable,
+    onUnload: config.onUnload,
   } as BiscottoModuleWithIntents;
 }

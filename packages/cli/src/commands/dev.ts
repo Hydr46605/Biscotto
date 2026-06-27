@@ -1,7 +1,7 @@
 import type { Command } from '../command.ts';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { watch, type FSWatcher } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, relative } from 'node:path';
 import { modulesDir, isRunning } from '../fs.ts';
 
 let botProcess: ChildProcess | null = null;
@@ -54,10 +54,21 @@ function startBot(root: string, entry: string): ChildProcess {
   return child;
 }
 
-function scheduleRestart(root: string, entry: string): void {
+function getModuleFromPath(watchDir: string, filename: string): string | null {
+  const fullPath = resolve(watchDir, filename);
+  const rel = relative(watchDir, fullPath);
+  const parts = rel.split(/[\\/]/);
+  if (parts.length > 0) {
+    return parts[0];
+  }
+  return null;
+}
+
+function scheduleRestart(root: string, entry: string, module?: string | null): void {
   if (restartTimeout) clearTimeout(restartTimeout);
   restartTimeout = setTimeout(async () => {
-    console.log('\n  Reloading modules...');
+    const moduleName = module ? ` (${module})` : '';
+    console.log(`\n  Reloading modules${moduleName}...`);
     await killBot();
     botProcess = startBot(root, entry);
   }, 300);
@@ -79,14 +90,20 @@ export const devCommand: Command = {
 
     console.log('  Starting Biscotto in dev mode...');
     console.log(`  Watching: ${watchDir}`);
+    console.log('  Press Ctrl+C to stop');
+    console.log('');
 
     botProcess = startBot(ctx.root, entry);
 
     try {
       watcher = watch(watchDir, { recursive: true }, (event, filename) => {
         if (!filename) return;
-        console.log(`  Change detected: ${filename}`);
-        scheduleRestart(ctx.root, entry);
+
+        const moduleName = getModuleFromPath(watchDir, filename);
+        const displayName = moduleName || filename;
+
+        console.log(`  Change detected: ${displayName}`);
+        scheduleRestart(ctx.root, entry, moduleName);
       });
     } catch (err) {
       console.log(`  Warning: could not watch modules directory: ${err}`);

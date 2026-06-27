@@ -38,6 +38,10 @@ export type {
   ModuleConfig,
 } from './kernel/define.ts';
 export type { ModuleManifest, BiscottoModule } from './contracts/module.contract.ts';
+export { ServiceRegistry } from './kernel/services.ts';
+export type { ServiceInfo } from './kernel/services.ts';
+export { ModuleLifecycle, ModuleState } from './kernel/lifecycle.ts';
+export type { ModuleContext } from './kernel/lifecycle.ts';
 
 async function bootstrap(): Promise<void> {
   LitLogger.banner();
@@ -101,6 +105,12 @@ async function bootstrap(): Promise<void> {
     }
   }
   LitLogger.info('Bootstrap', `Registered ${events.length} event listener(s)`);
+
+  // Log services
+  const services = loader.getServices().list();
+  if (services.length > 0) {
+    LitLogger.info('Bootstrap', `Services: ${services.map((s) => `${s.name} (by ${s.provider})`).join(', ')}`);
+  }
 
   // Ready event
   client.once(Events.ClientReady, (readyClient) => {

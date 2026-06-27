@@ -140,6 +140,7 @@ export interface InstalledModule {
   version: string;
   installedAt: string;
   builtAt?: string;
+  enabled?: boolean;
 }
 
 export interface InstalledFile {

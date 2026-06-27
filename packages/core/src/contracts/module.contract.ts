@@ -28,6 +28,9 @@ export interface ModuleManifest {
   readonly build?: string;
   readonly engine?: string;
   readonly dependencies?: Record<string, string>;
+  readonly peerDependencies?: Record<string, string>;
+  readonly requires?: string[];
+  readonly provides?: string[];
   readonly repository?: string;
   readonly license?: string;
   readonly tags?: string[];
@@ -126,6 +129,10 @@ export interface BiscottoModule {
   register(): ModuleRegistration;
   onInit?(client: Client): Promise<void> | void;
   onDestroy?(): Promise<void> | void;
+  onLoad?(ctx: unknown): Promise<void> | void;
+  onEnable?(ctx: unknown): Promise<void> | void;
+  onDisable?(ctx: unknown): Promise<void> | void;
+  onUnload?(ctx: unknown): Promise<void> | void;
 }
 
 export interface BiscottoModuleWithIntents extends BiscottoModule {
