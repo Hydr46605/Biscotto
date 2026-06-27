@@ -31,14 +31,23 @@ function killBot(): Promise<void> {
 
 function startBot(root: string, entry: string): ChildProcess {
   const isTs = entry.endsWith('.ts');
-  const cmd = isTs ? 'npx' : 'node';
-  const args = isTs ? ['tsx', 'watch', entry] : ['--watch', entry];
 
-  const child = spawn(cmd, args, {
-    cwd: root,
-    stdio: 'inherit',
-    ...(process.platform === 'win32' ? { shell: true } : {}),
-  });
+  let child: ChildProcess;
+  if (process.platform === 'win32') {
+    const cmdStr = isTs ? `npx tsx watch "${entry}"` : `node --watch "${entry}"`;
+    child = spawn(cmdStr, {
+      cwd: root,
+      stdio: 'inherit',
+      shell: true,
+    });
+  } else {
+    const cmd = isTs ? 'npx' : 'node';
+    const args = isTs ? ['tsx', 'watch', entry] : ['--watch', entry];
+    child = spawn(cmd, args, {
+      cwd: root,
+      stdio: 'inherit',
+    });
+  }
 
   child.on('error', (err) => {
     console.error(`  Bot error: ${err.message}`);

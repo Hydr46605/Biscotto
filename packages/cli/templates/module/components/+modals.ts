@@ -7,10 +7,10 @@ export const modalComponents = [
       { type: 'short', label: 'Name', required: true },
       { type: 'paragraph', label: 'Message', required: false },
     ],
-    run(ctx) {
+    async execute(ctx) {
       const name = ctx.fields.get('Name');
       const message = ctx.fields.get('Message');
-      ctx.reply({ content: `Hello ${name || 'World'}! ${message || ''}` });
+      await ctx.reply(`Hello ${name || 'World'}! ${message || ''}`);
     },
   }),
 ];

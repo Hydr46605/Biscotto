@@ -3,8 +3,8 @@ import { defineButton } from '@biscotto/core';
 export const buttonComponents = [
   defineButton({
     customId: 'example-button',
-    run(ctx) {
-      ctx.reply({ content: 'Button clicked!', ephemeral: true });
+    async execute(ctx) {
+      await ctx.reply('Button clicked!', { ephemeral: true });
     },
   }),
 ];

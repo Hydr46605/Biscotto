@@ -11,18 +11,13 @@ npm install @biscotto/core
 ## Usage
 
 ```typescript
-import { run } from '@biscotto/core/bot';
+import 'dotenv/config';
+import { run } from '@biscotto/core';
 
-const env = {
-  BOT_TOKEN: process.env.BOT_TOKEN!,
-  BOT_CLIENT_ID: process.env.BOT_CLIENT_ID!,
-  BOT_GUILD_ID: process.env.BOT_GUILD_ID!,
-  STORAGE_PATH: process.env.STORAGE_PATH ?? 'data/storage.json',
-  LOG_LEVEL: process.env.LOG_LEVEL ?? 'DEBUG',
-};
-
-run(env);
+run();
 ```
+
+The `run` function bootstraps the bot: loads modules from `.biscotto/modules/`, registers commands with Discord, and connects. Environment variables (`DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_GUILD_ID`) are read from `.env` via dotenv.
 
 ## Features
 

@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/Hydr46605/Biscotto/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License"></a>
-  <a href="https://github.com/Hydr46605/Biscotto"><img src="https://img.shields.io/badge/version-1.0.0-brightgreen" alt="Version"></a>
+  <a href="https://github.com/Hydr46605/Biscotto"><img src="https://img.shields.io/badge/version-1.7.0-brightgreen" alt="Version"></a>
 </p>
 
 ---

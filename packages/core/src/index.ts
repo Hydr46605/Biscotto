@@ -43,7 +43,7 @@ export { ModuleData, defineConfig } from './kernel/data.ts';
 export type { ConfigSchema, ConfigField } from './kernel/data.ts';
 export type { StorageProvider, StorageDriver } from './kernel/storage/types.ts';
 
-async function bootstrap(): Promise<void> {
+export async function run(): Promise<void> {
   LitLogger.banner();
   LitLogger.info('Bootstrap', 'Initializing Biscotto...');
 
@@ -143,7 +143,7 @@ async function bootstrap(): Promise<void> {
   await LitLogger.measure('Bootstrap', 'Discord login', () => client.login(config.token));
 }
 
-bootstrap().catch((error) => {
+run().catch((error) => {
   LitLogger.error('Fatal', `Failed to start: ${error}`);
   process.exit(1);
 });

@@ -103,7 +103,7 @@ import { defineCommand } from '@biscotto/core';
 export const pingCommand = defineCommand({
   name: 'ping',
   description: 'Check bot responsiveness',
-  async run(ctx) {
+  async execute(ctx) {
     await ctx.reply('Pong!');
   },
 });
@@ -128,7 +128,7 @@ import { defineEvent } from '@biscotto/core';
 export const onReady = defineEvent({
   name: 'ready',
   once: true,
-  run(client) {
+  async execute(client) {
     console.log(`Online as ${client.user?.tag}`);
   },
 });
@@ -277,7 +277,7 @@ import {
 export const infoCommand = defineCommand({
   name: 'info',
   description: 'Show server info',
-  async run(ctx) {
+  async execute(ctx) {
     const container = new ContainerBuilder()
       .addTextDisplayComponents(
         new TextDisplayBuilder().setContent('# Server Info'),
@@ -307,7 +307,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 export const confirmCommand = defineCommand({
   name: 'confirm',
   description: 'Show a confirmation button',
-  async run(ctx) {
+  async execute(ctx) {
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setCustomId('confirm-yes')
@@ -328,8 +328,8 @@ import { defineButton } from '@biscotto/core';
 
 export const confirmYesButton = defineButton({
   customId: 'confirm-yes',
-  run(ctx) {
-    ctx.reply('Confirmed!');
+  async execute(ctx) {
+    await ctx.reply('Confirmed!');
   },
 });
 
@@ -338,8 +338,8 @@ import { defineButton } from '@biscotto/core';
 
 export const confirmNoButton = defineButton({
   customId: 'confirm-no',
-  run(ctx) {
-    ctx.reply('Cancelled.');
+  async execute(ctx) {
+    await ctx.reply('Cancelled.');
   },
 });
 ```
@@ -360,8 +360,8 @@ export const roleSelect = defineSelectMenu({
     { label: 'Mod', value: 'mod' },
     { label: 'User', value: 'user' },
   ],
-  run(ctx) {
-    ctx.reply(`You selected: ${ctx.values.join(', ')}`);
+  async execute(ctx) {
+    await ctx.reply(`You selected: ${ctx.values.join(', ')}`);
   },
 });
 ```
@@ -378,7 +378,7 @@ import { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from
 export const feedbackCommand = defineCommand({
   name: 'feedback',
   description: 'Send feedback',
-  async run(ctx) {
+  async execute(ctx) {
     const modal = new ModalBuilder()
       .setCustomId('feedback-form')
       .setTitle('Feedback')
@@ -403,9 +403,9 @@ export const feedbackModal = defineModal({
   fields: [
     { type: 'paragraph', label: 'Feedback', required: true },
   ],
-  run(ctx) {
+  async execute(ctx) {
     const feedback = ctx.fields.get('Feedback');
-    ctx.reply(`Thanks: ${feedback}`);
+    await ctx.reply(`Thanks: ${feedback}`);
   },
 });
 ```
@@ -420,7 +420,7 @@ import { defineUserContextMenu } from '@biscotto/core';
 
 export const quickBan = defineUserContextMenu({
   name: 'Quick Ban',
-  async run(ctx) {
+  async execute(ctx) {
     const member = ctx.interaction.guild?.members.cache.get(ctx.targetUser.id);
     if (member?.bannable) {
       await member.ban();

@@ -104,7 +104,7 @@ export default defineModule({
     defineCommand({
       name: 'shop',
       description: 'View the shop',
-      async run(ctx) {
+      async execute(ctx) {
         const ui = ctx.services.require('ui-builder');
 
         const container = ui.createContainer('Shop')

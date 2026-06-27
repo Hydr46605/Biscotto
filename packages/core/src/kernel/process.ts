@@ -82,15 +82,25 @@ export class ProcessManager {
 
     // Determine command: use tsx for .ts files, node for .js
     const isTs = entry.endsWith('.ts');
-    const cmd = isTs ? 'npx' : 'node';
-    const args = isTs ? ['tsx', entry] : [entry];
 
-    const child = spawnChild(cmd, args, {
-      cwd: process.cwd(),
-      detached: true,
-      stdio: 'ignore',
-      ...(process.platform === 'win32' ? { shell: true } : {}),
-    });
+    let child: ChildProcess;
+    if (process.platform === 'win32') {
+      const cmdStr = isTs ? `npx tsx "${entry}"` : `node "${entry}"`;
+      child = spawnChild(cmdStr, {
+        cwd: process.cwd(),
+        detached: true,
+        stdio: 'ignore',
+        shell: true,
+      });
+    } else {
+      const cmd = isTs ? 'npx' : 'node';
+      const args = isTs ? ['tsx', entry] : [entry];
+      child = spawnChild(cmd, args, {
+        cwd: process.cwd(),
+        detached: true,
+        stdio: 'ignore',
+      });
+    }
 
     if (!child.pid) {
       throw new Error('Failed to spawn bot process');

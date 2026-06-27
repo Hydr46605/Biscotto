@@ -92,15 +92,25 @@ export function spawnBot(root: string, entry: string = 'src/index.ts'): ChildPro
   ensureBiscottoDir(root);
 
   const isTs = entry.endsWith('.ts');
-  const cmd = isTs ? 'npx' : 'node';
-  const args = isTs ? ['tsx', entry] : [entry];
 
-  const child = spawn(cmd, args, {
-    cwd: root,
-    detached: true,
-    stdio: 'ignore',
-    ...(process.platform === 'win32' ? { shell: true } : {}),
-  });
+  let child: ChildProcess;
+  if (process.platform === 'win32') {
+    const cmdStr = isTs ? `npx tsx "${entry}"` : `node "${entry}"`;
+    child = spawn(cmdStr, {
+      cwd: root,
+      detached: true,
+      stdio: 'ignore',
+      shell: true,
+    });
+  } else {
+    const cmd = isTs ? 'npx' : 'node';
+    const args = isTs ? ['tsx', entry] : [entry];
+    child = spawn(cmd, args, {
+      cwd: root,
+      detached: true,
+      stdio: 'ignore',
+    });
+  }
 
   if (!child.pid) throw new Error('Failed to spawn bot process');
 

@@ -9,8 +9,8 @@ export const selectComponents = [
       { label: 'Option 2', value: '2' },
       { label: 'Option 3', value: '3' },
     ],
-    run(ctx) {
-      ctx.reply({ content: `You selected: ${ctx.values.join(', ')}` });
+    async execute(ctx) {
+      await ctx.reply(`You selected: ${ctx.values.join(', ')}`);
     },
   }),
 ];
