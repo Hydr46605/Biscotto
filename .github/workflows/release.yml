@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g. 1.2.0)'
+        description: 'Version (e.g. 1.7.1)'
         required: true
         type: string
       dry-run:
@@ -49,30 +49,37 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Set version
-        id: bump
+      - name: Resolve version
+        id: version
         run: |
-          npm version ${{ inputs.version }} --workspaces --no-git-tag-version --allow-same-version
-          npm version ${{ inputs.version }} --no-git-tag-version --allow-same-version
-          echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $VERSION"
+
+      - name: Set version
+        run: |
+          npm version ${{ steps.version.outputs.version }} --workspaces --no-git-tag-version --allow-same-version
+          npm version ${{ steps.version.outputs.version }} --no-git-tag-version --allow-same-version
 
       - name: Generate changelog
-        id: changelog
         run: |
-          # Get commits since last tag
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           if [ -z "$LAST_TAG" ]; then
             COMMITS=$(git log --pretty=format:"- %s (%h)" HEAD)
+            COMPARE_FROM=$(git rev-list --max-parents=0 HEAD | head -1)
           else
             COMMITS=$(git log --pretty=format:"- %s (%h)" "$LAST_TAG"..HEAD)
+            COMPARE_FROM=$LAST_TAG
           fi
 
-          # Categorize commits
-          FEATURES=$(echo "$COMMITS" | grep -i "^[^-]*feat" || true)
-          FIXES=$(echo "$COMMITS" | grep -i "^[^-]*fix" || true)
-          OTHER=$(echo "$COMMITS" | grep -iv "^[^-]*feat\|^[^-]*fix\|^[^-]*BREAKING" || true)
+          FEATURES=$(echo "$COMMITS" | grep -iE "^[^-]*feat" || true)
+          FIXES=$(echo "$COMMITS" | grep -iE "^[^-]*fix" || true)
+          OTHER=$(echo "$COMMITS" | grep -ivE "^[^-]*feat|^[^-]*fix|^[^-]*BREAKING" || true)
 
-          # Build changelog
           {
             echo "## What's Changed"
             echo ""
@@ -91,7 +98,7 @@ jobs:
               echo "$OTHER"
               echo ""
             fi
-            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${LAST_TAG:-$(git rev-list --max-parents=0 HEAD | head -1)}...v${{ steps.bump.outputs.version }}"
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${COMPARE_FROM}...v${{ steps.version.outputs.version }}"
           } > CHANGELOG_BODY.md
 
           cat CHANGELOG_BODY.md
@@ -99,33 +106,39 @@ jobs:
       - name: Commit and tag
         run: |
           git add -A
-          git commit -m "release: v${{ steps.bump.outputs.version }}"
-          git tag "v${{ steps.bump.outputs.version }}"
+          git commit -m "release: v${{ steps.version.outputs.version }}" || echo "Nothing to commit"
+          git tag "v${{ steps.version.outputs.version }}" --force
 
       - name: Push
         run: |
-          git push
-          git push --tags
+          git push || true
+          git push --tags --force
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.bump.outputs.version }}
-          name: v${{ steps.bump.outputs.version }}
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
           body_path: CHANGELOG_BODY.md
           draft: false
           prerelease: false
 
       - name: Publish to npm
-        if: ${{ inputs.dry-run == false }}
+        if: ${{ inputs.dry-run == false && github.event_name == 'workflow_dispatch' }}
+        run: npm publish --workspaces --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to npm (tag push)
+        if: ${{ github.event_name == 'push' }}
         run: npm publish --workspaces --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Summary
         run: |
-          echo "## 🍪 Release v${{ steps.bump.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 🍪 Release v${{ steps.version.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Version**: v${{ steps.bump.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Tag**: \`v${{ steps.bump.outputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Published**: ${{ inputs.dry-run == false && 'Yes' || 'Dry run' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Version**: v${{ steps.version.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Tag**: \`v${{ steps.version.outputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Published**: Yes" >> "$GITHUB_STEP_SUMMARY"
