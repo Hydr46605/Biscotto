@@ -202,6 +202,36 @@ export default defineModule({
 
 Supported drivers: `json`, `sqlite`, `yaml`, `mysql` (configure in `.env`).
 
+## Module Configuration
+
+Each module can define a typed config schema with automatic defaults, merging, and validation:
+
+```typescript
+import { defineModule, defineConfig } from '@biscotto/core';
+
+const config = defineConfig({
+  schema: {
+    greeting: { type: 'string', description: 'Greeting message', default: 'Hello!' },
+    maxWarnings: { type: 'number', description: 'Max warnings before mute', default: 3 },
+    logActions: { type: 'boolean', description: 'Log moderation actions', default: true },
+  },
+  defaults: { greeting: 'Hello!', maxWarnings: 3, logActions: true },
+});
+
+export default defineModule({
+  manifest,
+  config,
+  onLoad(ctx) {
+    const greeting = ctx.config.get<string>(manifest.name, 'greeting');
+    ctx.logger.info(`Greeting: ${greeting}`);
+  },
+});
+```
+
+Configs are stored in `.biscotto/configs/<module>.json` and auto-created on first load.
+
+See [Module Configuration](./module-config.md) for details.
+
 ## Ephemeral Replies
 
 Reply only visible to the user:
@@ -432,6 +462,10 @@ biscotto publish my-module --registry
 | `biscotto stop` | Stop the bot |
 | `biscotto restart` | Restart the bot |
 | `biscotto status` | Show bot status |
+| `biscotto enable <name>` | Enable a module |
+| `biscotto disable <name>` | Disable a module |
+| `biscotto reload <name>` | Reload a module |
+| `biscotto config <module>` | View/edit module config |
 | `biscotto update <name>` | Update a module |
 | `biscotto search <query>` | Search registry |
 

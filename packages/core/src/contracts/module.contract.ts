@@ -11,6 +11,7 @@ import type {
   MessageContextMenuCommandInteraction,
   GatewayIntentBits,
 } from 'discord.js';
+import type { ConfigSchema } from '../kernel/module-config.ts';
 
 // ── Module Manifest ───────────────────────────────────────────────────────────
 
@@ -31,6 +32,7 @@ export interface ModuleManifest {
   readonly peerDependencies?: Record<string, string>;
   readonly requires?: string[];
   readonly provides?: string[];
+  readonly config?: ConfigSchema;
   readonly repository?: string;
   readonly license?: string;
   readonly tags?: string[];
@@ -137,4 +139,5 @@ export interface BiscottoModule {
 
 export interface BiscottoModuleWithIntents extends BiscottoModule {
   readonly intents: GatewayIntentBits[];
+  readonly config?: { schema: ConfigSchema; defaults: Record<string, unknown> };
 }

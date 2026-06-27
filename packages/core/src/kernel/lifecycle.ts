@@ -1,6 +1,7 @@
 import type { Client } from 'discord.js';
 import { LitLogger } from './logger.ts';
 import type { ServiceRegistry } from './services.ts';
+import type { ConfigManager } from './module-config.ts';
 
 // ── Module State ──────────────────────────────────────────────────────────────
 
@@ -18,6 +19,7 @@ export enum ModuleState {
 export interface ModuleContext {
   readonly client: Client;
   readonly services: ServiceRegistry;
+  readonly config: ConfigManager;
   readonly logger: ModuleLogger;
 }
 
@@ -66,6 +68,7 @@ export class ModuleLifecycle {
   private hooks = new Map<string, LifecycleHooks>();
   private client: Client | null = null;
   private services: ServiceRegistry | null = null;
+  private configManager: ConfigManager | null = null;
 
   setClient(client: Client): void {
     this.client = client;
@@ -73,6 +76,10 @@ export class ModuleLifecycle {
 
   setServices(services: ServiceRegistry): void {
     this.services = services;
+  }
+
+  setConfigManager(configManager: ConfigManager): void {
+    this.configManager = configManager;
   }
 
   /**
@@ -134,6 +141,7 @@ export class ModuleLifecycle {
     const ctx: ModuleContext = {
       client: this.client,
       services: this.services!,
+      config: this.configManager!,
       logger: createModuleLogger(name),
     };
 

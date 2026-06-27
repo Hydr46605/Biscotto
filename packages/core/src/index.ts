@@ -42,11 +42,14 @@ export { ServiceRegistry } from './kernel/services.ts';
 export type { ServiceInfo } from './kernel/services.ts';
 export { ModuleLifecycle, ModuleState } from './kernel/lifecycle.ts';
 export type { ModuleContext } from './kernel/lifecycle.ts';
+export { ConfigManager, defineConfig } from './kernel/module-config.ts';
+export type { ConfigSchema, ConfigField } from './kernel/module-config.ts';
 
 async function bootstrap(): Promise<void> {
   LitLogger.banner();
   LitLogger.info('Bootstrap', 'Initializing Biscotto...');
 
+  const root = process.cwd();
   const loader = new ModuleLoader();
   const registrar = new CommandRegistrar();
 
@@ -55,9 +58,9 @@ async function bootstrap(): Promise<void> {
   await LitLogger.measure('Storage', 'Initialization', () => storage.init());
 
   // Load all modules (collects commands, events, intents without client)
-  await LitLogger.measure('Bootstrap', 'Builtin modules', () => loader.loadAll(builtinModules));
+  await LitLogger.measure('Bootstrap', 'Builtin modules', () => loader.loadAll(builtinModules, undefined, root));
 
-  const modulesDir = resolve(process.cwd(), '.biscotto', 'modules');
+  const modulesDir = resolve(root, '.biscotto', 'modules');
   const { modules: externalModules, errors } = await loadFromDisk(modulesDir, builtinModules);
 
   if (errors.length > 0) {
@@ -65,7 +68,7 @@ async function bootstrap(): Promise<void> {
   }
 
   if (externalModules.length > 0) {
-    await LitLogger.measure('Bootstrap', 'External modules', () => loader.loadAll(externalModules));
+    await LitLogger.measure('Bootstrap', 'External modules', () => loader.loadAll(externalModules, undefined, root));
   }
 
   // Merge intents from all modules and create the real client

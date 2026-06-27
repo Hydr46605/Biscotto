@@ -29,6 +29,7 @@ biscotto <command> [options]
 | `enable <module>` | Enable a module |
 | `disable <module>` | Disable a module |
 | `reload <module>` | Reload a module |
+| `config <module>` | View or edit module configuration |
 | `start` | Start bot in background process |
 | `stop` | Stop the bot process |
 | `restart` | Restart the bot |
@@ -72,6 +73,10 @@ biscotto disable shop
 
 # Check module status
 biscotto status shop
+
+# View/edit module config
+biscotto config zero
+biscotto config zero prefix ?
 
 # Validate before publishing
 biscotto pack my-module

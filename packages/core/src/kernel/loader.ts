@@ -13,6 +13,7 @@ import type {
 import { LitLogger } from './logger.ts';
 import { ServiceRegistry } from './services.ts';
 import { ModuleLifecycle, ModuleState, type ModuleContext } from './lifecycle.ts';
+import { ConfigManager } from './module-config.ts';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -38,11 +39,16 @@ export class ModuleLoader {
   private client: Client | null = null;
   private services = new ServiceRegistry();
   private lifecycle = new ModuleLifecycle();
+  private configManager: ConfigManager | null = null;
 
   // ── Public API ────────────────────────────────────────────────────────────
 
-  async loadAll(modules: ModuleLike[], client?: Client): Promise<void> {
+  async loadAll(modules: ModuleLike[], client?: Client, root?: string): Promise<void> {
     if (client) this.client = client;
+    if (root) {
+      this.configManager = new ConfigManager(root);
+      this.lifecycle.setConfigManager(this.configManager);
+    }
 
     LitLogger.info('Loader', `Discovering ${modules.length} module(s)...`);
 

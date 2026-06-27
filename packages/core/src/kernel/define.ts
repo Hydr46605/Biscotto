@@ -28,6 +28,7 @@ import type {
   BiscottoModuleWithIntents,
 } from '../contracts/module.contract.ts';
 import type { ModuleContext } from './lifecycle.ts';
+import type { ModuleConfig as ModuleConfigType } from './module-config.ts';
 
 // ── Shared Helpers ────────────────────────────────────────────────────────────
 
@@ -353,6 +354,7 @@ export function defineEvent(config: EventConfig): EventDefinition {
 
 export interface ModuleConfig {
   manifest: ModuleManifest;
+  config?: ModuleConfigType;
   intents?: GatewayIntentBits[];
   commands?: CommandDefinition[];
   buttons?: ButtonDefinition[];
@@ -374,6 +376,7 @@ export function defineModule(config: ModuleConfig): BiscottoModuleWithIntents {
   return {
     manifest: config.manifest,
     intents: config.intents ?? [],
+    config: config.config,
     register() {
       return {
         commands: config.commands ?? [],

@@ -16,6 +16,7 @@ import { publishCommand } from './publish.ts';
 import { enableCommand } from './enable.ts';
 import { disableCommand } from './disable.ts';
 import { reloadCommand } from './reload.ts';
+import { configCommand } from './config.ts';
 
 export const commands: Command[] = [
   initCommand,
@@ -35,4 +36,5 @@ export const commands: Command[] = [
   enableCommand,
   disableCommand,
   reloadCommand,
+  configCommand,
 ];

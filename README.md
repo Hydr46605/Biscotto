@@ -96,6 +96,9 @@ export default defineModule({
 | `biscotto add <source>` | Install a module |
 | `biscotto remove <name>` | Uninstall a module |
 | `biscotto list` | List installed modules |
+| `biscotto enable <name>` | Enable a module |
+| `biscotto disable <name>` | Disable a module |
+| `biscotto config <module>` | View/edit module config |
 | `biscotto start` | Start bot in background |
 | `biscotto stop` | Stop the bot |
 | `biscotto restart` | Restart the bot |
