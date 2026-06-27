@@ -10,6 +10,7 @@ interface Manifest {
   dependencies?: Record<string, string>;
   provides?: string[];
   requires?: string[];
+  storage?: { driver: string };
 }
 
 function readManifest(moduleDir: string): Manifest | null {
@@ -43,6 +44,10 @@ function readManifest(moduleDir: string): Manifest | null {
       ? requiresMatch[1].matchAll(/['"]([^'"]+)['"]/g)
       : [];
 
+    // Extract storage
+    const storageMatch = content.match(/storage:\s*\{\s*driver:\s*['"]([^'"]+)['"]/);
+    const storage = storageMatch ? { driver: storageMatch[1] } : undefined;
+
     return {
       name: nameMatch?.[1],
       version: versionMatch?.[1],
@@ -50,6 +55,7 @@ function readManifest(moduleDir: string): Manifest | null {
       dependencies: Object.keys(deps).length > 0 ? deps : undefined,
       provides: [...provides].map((m) => m[1]),
       requires: [...requires].map((m) => m[1]),
+      storage,
     };
   } catch {
     return null;
@@ -83,6 +89,9 @@ export const statusCommand: Command = {
       console.log(`  Module: ${targetModule}@${mod.version}`);
       console.log(`  State:  ${enabled ? 'enabled' : 'disabled'}`);
       if (manifest?.description) console.log(`  Description: ${manifest.description}`);
+      if (manifest?.storage) {
+        console.log(`  Storage: ${manifest.storage.driver} (.biscotto/configs/${targetModule}/)`);
+      }
       if (manifest?.dependencies) {
         const deps = Object.entries(manifest.dependencies);
         if (deps.length > 0) {
@@ -121,7 +130,10 @@ export const statusCommand: Command = {
         const mod = installed.modules[name];
         const enabled = mod.enabled !== false;
         const icon = enabled ? '+' : '-';
-        console.log(`    [${icon}] ${name}@${mod.version}`);
+        const moduleDir = resolve(modsDir, name);
+        const manifest = readManifest(moduleDir);
+        const storage = manifest?.storage ? ` [${manifest.storage.driver}]` : '';
+        console.log(`    [${icon}] ${name}@${mod.version}${storage}`);
       }
       console.log('');
     }

@@ -1,5 +1,5 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
-import { resolve, join } from 'node:path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'node:fs';
+import { resolve, join, relative } from 'node:path';
 import { LitLogger } from './logger.ts';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -20,137 +20,171 @@ export interface ModuleConfig<T = Record<string, unknown>> {
   readonly defaults: T;
 }
 
-// ── Config Manager ────────────────────────────────────────────────────────────
+// ── Module Data Directory ─────────────────────────────────────────────────────
 
-export class ConfigManager {
-  private configsDir: string;
-  private cache = new Map<string, Record<string, unknown>>();
+/**
+ * Per-module data directory: `.biscotto/configs/<ModuleName>/`
+ *
+ * Provides:
+ * - Structured JSON config (config.json) with schema + defaults
+ * - Free file access for any other files (images, cards, data, etc.)
+ */
+export class ModuleData {
+  private readonly dir: string;
+  private readonly name: string;
+  private configCache: Record<string, unknown> | null = null;
 
-  constructor(root: string) {
-    this.configsDir = resolve(root, '.biscotto', 'configs');
-    if (!existsSync(this.configsDir)) {
-      mkdirSync(this.configsDir, { recursive: true });
+  constructor(root: string, moduleName: string) {
+    this.name = moduleName;
+    this.dir = resolve(root, '.biscotto', 'configs', moduleName);
+    if (!existsSync(this.dir)) {
+      mkdirSync(this.dir, { recursive: true });
     }
   }
 
+  // ── Config (JSON) ────────────────────────────────────────────────────────
+
+  private getConfigPath(): string {
+    return join(this.dir, 'config.json');
+  }
+
   /**
-   * Load config for a module. Creates default config if not exists.
+   * Load config with schema validation and defaults merging.
+   * Creates default config if not exists.
    */
-  load<T extends Record<string, unknown>>(
-    moduleName: string,
+  loadConfig<T extends Record<string, unknown>>(
     schema: ConfigSchema,
     defaults: T,
   ): T {
-    // Check cache
-    if (this.cache.has(moduleName)) {
-      return this.cache.get(moduleName) as T;
-    }
+    if (this.configCache) return this.configCache as T;
 
-    const configPath = this.getConfigPath(moduleName);
+    const configPath = this.getConfigPath();
 
     if (!existsSync(configPath)) {
-      // Create default config
-      this.save(moduleName, defaults);
-      this.cache.set(moduleName, defaults);
-      LitLogger.debug('Config', `Created default config for ${moduleName}`);
+      this.saveConfig(defaults);
+      this.configCache = defaults;
+      LitLogger.debug('Data', `Created default config for ${this.name}`);
       return defaults;
     }
 
-    // Load existing config
     try {
       const raw = readFileSync(configPath, 'utf-8');
       const stored = JSON.parse(raw) as Record<string, unknown>;
-
-      // Merge with defaults (add missing keys, keep existing values)
       const merged = this.mergeWithDefaults(stored, defaults, schema);
 
-      // Save if we added new keys
       if (JSON.stringify(merged) !== JSON.stringify(stored)) {
-        this.save(moduleName, merged);
-        LitLogger.debug('Config', `Updated config for ${moduleName} with new defaults`);
+        this.saveConfig(merged);
+        LitLogger.debug('Data', `Updated config for ${this.name} with new defaults`);
       }
 
-      this.cache.set(moduleName, merged);
+      this.configCache = merged;
       return merged as T;
     } catch (error) {
-      LitLogger.error('Config', `Failed to load config for ${moduleName}: ${error}`);
-      this.cache.set(moduleName, defaults);
+      LitLogger.error('Data', `Failed to load config for ${this.name}: ${error}`);
+      this.configCache = defaults;
       return defaults;
     }
   }
 
-  /**
-   * Save config for a module.
-   */
-  save(moduleName: string, config: Record<string, unknown>): void {
-    const configPath = this.getConfigPath(moduleName);
-    const dir = resolve(this.configsDir);
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
-    }
-    writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
-    this.cache.set(moduleName, config);
+  /** Save the full config object. */
+  saveConfig(config: Record<string, unknown>): void {
+    writeFileSync(this.getConfigPath(), JSON.stringify(config, null, 2), 'utf-8');
+    this.configCache = config;
   }
 
-  /**
-   * Get a specific config value.
-   */
-  get<T>(moduleName: string, key: string): T | undefined {
-    const config = this.cache.get(moduleName);
-    if (!config) return undefined;
-    return config[key] as T;
+  /** Get a single config value. */
+  getConfig<T>(key: string): T | undefined {
+    if (!this.configCache) return undefined;
+    return this.configCache[key] as T;
   }
 
-  /**
-   * Set a specific config value.
-   */
-  set(moduleName: string, key: string, value: unknown): void {
-    const config = this.cache.get(moduleName) ?? {};
+  /** Set a single config value and persist. */
+  setConfig(key: string, value: unknown): void {
+    const config = this.configCache ?? {};
     config[key] = value;
-    this.save(moduleName, config);
+    this.saveConfig(config);
   }
 
-  /**
-   * Check if a config file exists.
-   */
-  has(moduleName: string): boolean {
-    return existsSync(this.getConfigPath(moduleName));
+  /** Get all config keys. */
+  configKeys(): string[] {
+    return this.configCache ? Object.keys(this.configCache) : [];
   }
 
-  /**
-   * Delete a config file.
-   */
-  delete(moduleName: string): boolean {
-    const configPath = this.getConfigPath(moduleName);
-    if (existsSync(configPath)) {
-      const { unlinkSync } = require('node:fs');
-      unlinkSync(configPath);
-      this.cache.delete(moduleName);
+  /** Check if config file exists. */
+  hasConfig(): boolean {
+    return existsSync(this.getConfigPath());
+  }
+
+  /** Delete the config file. */
+  deleteConfig(): boolean {
+    const path = this.getConfigPath();
+    if (existsSync(path)) {
+      unlinkSync(path);
+      this.configCache = null;
       return true;
     }
     return false;
   }
 
-  /**
-   * Get all config keys for a module.
-   */
-  keys(moduleName: string): string[] {
-    const config = this.cache.get(moduleName);
-    return config ? Object.keys(config) : [];
+  // ── Free File Access ─────────────────────────────────────────────────────
+
+  private safePath(filename: string): string {
+    const target = resolve(this.dir, filename);
+    const rel = relative(this.dir, target);
+    if (rel.startsWith('..') || rel === '') {
+      throw new Error(`Path traversal blocked: ${filename}`);
+    }
+    return target;
   }
 
-  /**
-   * Clear cache.
-   */
-  clearCache(): void {
-    this.cache.clear();
+  /** Read a file as string. */
+  readFile(filename: string): string {
+    return readFileSync(this.safePath(filename), 'utf-8');
   }
 
-  // ── Internal ──────────────────────────────────────────────────────────────
-
-  private getConfigPath(moduleName: string): string {
-    return join(this.configsDir, `${moduleName}.json`);
+  /** Read a file as Buffer. */
+  readBuffer(filename: string): Buffer {
+    return readFileSync(this.safePath(filename));
   }
+
+  /** Write content to a file. Creates parent dirs if needed. */
+  writeFile(filename: string, data: Buffer | string): void {
+    const target = this.safePath(filename);
+    const dir = resolve(target, '..');
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    writeFileSync(target, data, typeof data === 'string' ? 'utf-8' : undefined);
+  }
+
+  /** Delete a file. Returns true if deleted. */
+  deleteFile(filename: string): boolean {
+    const target = this.safePath(filename);
+    if (!existsSync(target)) return false;
+    unlinkSync(target);
+    return true;
+  }
+
+  /** Check if a file exists. */
+  fileExists(filename: string): boolean {
+    return existsSync(this.safePath(filename));
+  }
+
+  /** List all files in the module's directory (non-recursive). */
+  listFiles(): string[] {
+    if (!existsSync(this.dir)) return [];
+    return readdirSync(this.dir).filter((f) => {
+      const stat = statSync(join(this.dir, f));
+      return stat.isFile();
+    });
+  }
+
+  /** Get the absolute path to the module's directory. */
+  getDir(): string {
+    return this.dir;
+  }
+
+  // ── Internal ─────────────────────────────────────────────────────────────
 
   private mergeWithDefaults(
     stored: Record<string, unknown>,
@@ -161,13 +195,11 @@ export class ConfigManager {
 
     for (const [key, field] of Object.entries(schema)) {
       if (!(key in result)) {
-        // Add missing key with default
         result[key] = field.default ?? this.getDefaultForType(field.type);
       } else {
-        // Validate existing value
         const value = result[key];
         if (!this.isValidType(value, field.type)) {
-          LitLogger.warn('Config', `Invalid type for ${key}, using default`);
+          LitLogger.warn('Data', `Invalid type for ${key}, using default`);
           result[key] = field.default ?? this.getDefaultForType(field.type);
         }
       }
@@ -187,7 +219,7 @@ export class ConfigManager {
   }
 
   private isValidType(value: unknown, type: string): boolean {
-    if (value === null || value === undefined) return true; // null/undefined uses default
+    if (value === null || value === undefined) return true;
     switch (type) {
       case 'string': return typeof value === 'string';
       case 'number': return typeof value === 'number' && !isNaN(value);

@@ -1,11 +1,8 @@
 import { resolve } from 'node:path';
 import { Events } from 'discord.js';
-import { createClient, config, LitLogger, ModuleLoader, CommandRegistrar, InteractionRouter, StorageManager } from './kernel/index.ts';
+import { createClient, config, LitLogger, ModuleLoader, CommandRegistrar, InteractionRouter } from './kernel/index.ts';
 import { loadFromDisk } from './kernel/discovery.ts';
 import { modules as builtinModules } from './modules/index.ts';
-
-// Global storage instance accessible from any module
-export let storage: StorageManager;
 
 // Re-export API helpers for module authors
 export {
@@ -42,8 +39,9 @@ export { ServiceRegistry } from './kernel/services.ts';
 export type { ServiceInfo } from './kernel/services.ts';
 export { ModuleLifecycle, ModuleState } from './kernel/lifecycle.ts';
 export type { ModuleContext } from './kernel/lifecycle.ts';
-export { ConfigManager, defineConfig } from './kernel/module-config.ts';
+export { ModuleData, defineConfig } from './kernel/module-config.ts';
 export type { ConfigSchema, ConfigField } from './kernel/module-config.ts';
+export type { StorageProvider, StorageDriver } from './kernel/storage/types.ts';
 
 async function bootstrap(): Promise<void> {
   LitLogger.banner();
@@ -53,9 +51,10 @@ async function bootstrap(): Promise<void> {
   const loader = new ModuleLoader();
   const registrar = new CommandRegistrar();
 
-  // Initialize storage
-  storage = new StorageManager(config.storage);
-  await LitLogger.measure('Storage', 'Initialization', () => storage.init());
+  // Initialize MySQL if configured
+  if (config.mysql) {
+    await LitLogger.measure('Storage', 'MySQL pool', () => loader.initMysql(config.mysql!));
+  }
 
   // Load all modules (collects commands, events, intents without client)
   await LitLogger.measure('Bootstrap', 'Builtin modules', () => loader.loadAll(builtinModules, undefined, root));
@@ -69,6 +68,12 @@ async function bootstrap(): Promise<void> {
 
   if (externalModules.length > 0) {
     await LitLogger.measure('Bootstrap', 'External modules', () => loader.loadAll(externalModules, undefined, root));
+  }
+
+  // Setup per-module data and storage
+  const allModules = [...builtinModules, ...externalModules];
+  for (const mod of allModules) {
+    await loader.setupModuleData(mod);
   }
 
   // Merge intents from all modules and create the real client
@@ -128,7 +133,6 @@ async function bootstrap(): Promise<void> {
   process.on('SIGINT', async () => {
     LitLogger.line();
     LitLogger.warn('Shutdown', 'Received SIGINT, shutting down gracefully...');
-    await storage.close();
     await loader.destroyAll();
     client.destroy();
     LitLogger.info('Shutdown', 'Goodbye!');

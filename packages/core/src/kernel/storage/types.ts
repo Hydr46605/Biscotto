@@ -1,23 +1,23 @@
 export type StorageDriver = 'json' | 'sqlite' | 'yaml' | 'mysql';
 
-export interface StorageConfig {
+/**
+ * MySQL connection config shared across all modules.
+ * Each module gets its own table with a <ModuleName>_ prefix.
+ */
+export interface MysqlConfig {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string;
+}
+
+/**
+ * Storage configuration declared per-module in the manifest.
+ * Each module chooses its own driver and options.
+ */
+export interface ModuleStorageConfig {
   driver: StorageDriver;
-  json?: {
-    path: string;
-  };
-  sqlite?: {
-    path: string;
-  };
-  yaml?: {
-    path: string;
-  };
-  mysql?: {
-    host: string;
-    port: number;
-    user: string;
-    password: string;
-    database: string;
-  };
 }
 
 export interface StorageProvider {

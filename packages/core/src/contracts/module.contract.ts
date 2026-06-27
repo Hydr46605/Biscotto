@@ -12,6 +12,7 @@ import type {
   GatewayIntentBits,
 } from 'discord.js';
 import type { ConfigSchema } from '../kernel/module-config.ts';
+import type { StorageDriver } from '../kernel/storage/types.ts';
 
 // ── Module Manifest ───────────────────────────────────────────────────────────
 
@@ -32,6 +33,7 @@ export interface ModuleManifest {
   readonly peerDependencies?: Record<string, string>;
   readonly requires?: string[];
   readonly provides?: string[];
+  readonly storage?: { driver: StorageDriver };
   readonly config?: ConfigSchema;
   readonly repository?: string;
   readonly license?: string;
@@ -139,5 +141,4 @@ export interface BiscottoModule {
 
 export interface BiscottoModuleWithIntents extends BiscottoModule {
   readonly intents: GatewayIntentBits[];
-  readonly config?: { schema: ConfigSchema; defaults: Record<string, unknown> };
 }

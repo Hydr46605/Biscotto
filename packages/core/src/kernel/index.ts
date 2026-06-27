@@ -6,7 +6,7 @@ export { CommandRegistrar } from './registrar.ts';
 export { CommandDispatcher } from './dispatcher.ts';
 export { InteractionRouter } from './router.ts';
 export { ProcessManager } from './process.ts';
-export { StorageManager, NamespacedStorage } from './storage/index.ts';
+export { StorageManager, NamespacedStorage } from './storage/manager.ts';
 export { validateManifest, loadManifest, ManifestError } from './validation.ts';
 export { InstalledRegistry } from './registry.ts';
 export {
@@ -23,7 +23,7 @@ export { PermissionChecker } from './middleware/permissions.ts';
 export { MiddlewarePipeline } from './middleware/pipeline.ts';
 export { ServiceRegistry } from './services.ts';
 export { ModuleLifecycle, ModuleState } from './lifecycle.ts';
-export { ConfigManager, defineConfig } from './module-config.ts';
+export { ModuleData, defineConfig } from './module-config.ts';
 export {
   defineCommand,
   defineButton,
@@ -56,7 +56,7 @@ export type {
 export type { InstalledModule, InstalledFile } from './registry.ts';
 export type { ResolvedModule } from './resolver.ts';
 export type { LoadResult, LoadError } from './discovery.ts';
-export type { StorageConfig, StorageProvider, StorageDriver } from './storage/types.ts';
+export type { StorageProvider, StorageDriver, ModuleStorageConfig, MysqlConfig } from './storage/types.ts';
 export type { MiddlewareConfig, MiddlewareResult } from './middleware/pipeline.ts';
 export type { PermissionString } from './middleware/permissions.ts';
 export type { ServiceInfo } from './services.ts';

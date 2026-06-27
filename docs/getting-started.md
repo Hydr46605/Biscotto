@@ -171,36 +171,44 @@ Biscotto merges intents from all modules automatically. Base intents (`Guilds`, 
 
 ## Storage
 
-Each module gets a namespaced storage instance:
+Each module gets its own isolated storage instance. Declare the driver in your manifest:
 
 ```typescript
 import { defineModule } from '@biscotto/core';
-import { storage } from '@biscotto/core';
 
 export default defineModule({
-  manifest,
-  async onInit(client) {
-    const db = storage.namespace('my-module');
-
-    // Set a value
-    await db.set('counter', 42);
-
-    // Get a value
-    const count = await db.get<number>('counter');
-
-    // Check if key exists
-    const exists = await db.has('counter');
-
-    // Delete a key
-    await db.delete('counter');
-
-    // Get all keys
-    const all = await db.all();
+  manifest: {
+    name: 'my-module',
+    version: '1.0.0',
+    storage: { driver: 'sqlite' },  // 'json' | 'sqlite' | 'yaml' | 'mysql'
+  },
+  async onLoad(ctx) {
+    // ctx.storage is fully isolated — your own file/DB/table
+    await ctx.storage.set('counter', 42);
+    const count = await ctx.storage.get<number>('counter');
+    const exists = await ctx.storage.has('counter');
+    await ctx.storage.delete('counter');
+    const all = await ctx.storage.all();
   },
 });
 ```
 
-Supported drivers: `json`, `sqlite`, `yaml`, `mysql` (configure in `.env`).
+Each module also gets a data directory for free files (images, cards, etc.) via `ctx.data`:
+
+```typescript
+onLoad(ctx) {
+  // Write files
+  ctx.data.writeFile('logo.png', imageBuffer);
+
+  // Read files
+  const image = ctx.data.readBuffer('logo.png');
+
+  // List files
+  const files = ctx.data.listFiles();
+}
+```
+
+See [Module Storage](./module-storage.md) for details.
 
 ## Module Configuration
 
@@ -220,17 +228,20 @@ const config = defineConfig({
 
 export default defineModule({
   manifest,
-  config,
   onLoad(ctx) {
-    const greeting = ctx.config.get<string>(manifest.name, 'greeting');
-    ctx.logger.info(`Greeting: ${greeting}`);
+    const cfg = ctx.data.loadConfig(config.schema, config.defaults);
+    ctx.logger.info(`Greeting: ${cfg.greeting}`);
+
+    // Get/set individual values
+    const rate = ctx.data.getConfig<number>('maxWarnings');
+    ctx.data.setConfig('maxWarnings', 5);
   },
 });
 ```
 
-Configs are stored in `.biscotto/configs/<module>.json` and auto-created on first load.
+Configs are stored in `.biscotto/configs/<ModuleName>/config.json` and auto-created on first load.
 
-See [Module Configuration](./module-config.md) for details.
+See [Module Storage](./module-storage.md) for details.
 
 ## Ephemeral Replies
 

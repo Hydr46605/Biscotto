@@ -30,7 +30,9 @@ biscotto start
 
 ## Documentation
 
-- **[Getting Started](docs/getting-started.md)** ~ setup, first module, commands, events, storage
+- **[Getting Started](docs/getting-started.md)** ~ setup, first module, commands, events
+- **[Module Storage](docs/module-storage.md)** ~ per-module isolated storage and data
+- **[Module Config](docs/module-config.md)** ~ typed configuration with schema
 - **[Core API](packages/core/README.md)** ~ framework internals
 
 ## Packages

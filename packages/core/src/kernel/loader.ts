@@ -13,7 +13,9 @@ import type {
 import { LitLogger } from './logger.ts';
 import { ServiceRegistry } from './services.ts';
 import { ModuleLifecycle, ModuleState, type ModuleContext } from './lifecycle.ts';
-import { ConfigManager } from './module-config.ts';
+import { ModuleData } from './module-config.ts';
+import { StorageManager } from './storage/manager.ts';
+import type { StorageProvider } from './storage/types.ts';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -39,16 +41,14 @@ export class ModuleLoader {
   private client: Client | null = null;
   private services = new ServiceRegistry();
   private lifecycle = new ModuleLifecycle();
-  private configManager: ConfigManager | null = null;
+  private storageManager = new StorageManager();
+  private root: string | null = null;
 
   // ── Public API ────────────────────────────────────────────────────────────
 
   async loadAll(modules: ModuleLike[], client?: Client, root?: string): Promise<void> {
     if (client) this.client = client;
-    if (root) {
-      this.configManager = new ConfigManager(root);
-      this.lifecycle.setConfigManager(this.configManager);
-    }
+    if (root) this.root = root;
 
     LitLogger.info('Loader', `Discovering ${modules.length} module(s)...`);
 
@@ -141,13 +141,18 @@ export class ModuleLoader {
     }
     this.loaded = [];
     this.services.clear();
+    await this.storageManager.closeAll();
+  }
+
+  /**
+   * Initialize MySQL if any module needs it.
+   */
+  async initMysql(config: { host: string; port: number; user: string; password: string; database: string }): Promise<void> {
+    await this.storageManager.initMysql(config);
   }
 
   // ── Lifecycle Control ─────────────────────────────────────────────────────
 
-  /**
-   * Enable a module by name.
-   */
   async enableModule(name: string): Promise<boolean> {
     const mod = this.loaded.find((m) => m.instance.manifest.name === name);
     if (!mod) {
@@ -168,9 +173,6 @@ export class ModuleLoader {
     return success;
   }
 
-  /**
-   * Disable a module by name.
-   */
   async disableModule(name: string): Promise<boolean> {
     const mod = this.loaded.find((m) => m.instance.manifest.name === name);
     if (!mod) {
@@ -183,7 +185,6 @@ export class ModuleLoader {
       return true;
     }
 
-    // Remove services provided by this module
     const removedServices = this.services.removeByProvider(name);
     if (removedServices.length > 0) {
       LitLogger.debug('Loader', `Removed services from ${name}: ${removedServices.join(', ')}`);
@@ -197,18 +198,12 @@ export class ModuleLoader {
     return success;
   }
 
-  /**
-   * Reload a module (disable + enable).
-   */
   async reloadModule(name: string): Promise<boolean> {
     const disabled = await this.disableModule(name);
     if (!disabled) return false;
     return this.enableModule(name);
   }
 
-  /**
-   * Unload a module completely.
-   */
   async unloadModuleByName(name: string): Promise<boolean> {
     const mod = this.loaded.find((m) => m.instance.manifest.name === name);
     if (!mod) return false;
@@ -219,37 +214,26 @@ export class ModuleLoader {
     return true;
   }
 
-  /**
-   * Load a single module (used for hot reload).
-   */
   async loadModule(mod: ModuleLike): Promise<boolean> {
     return this.load(mod);
   }
 
-  /**
-   * Get service registry.
-   */
   getServices(): ServiceRegistry {
     return this.services;
   }
 
-  /**
-   * Get lifecycle manager.
-   */
   getLifecycle(): ModuleLifecycle {
     return this.lifecycle;
   }
 
-  /**
-   * Get all loaded modules with their states.
-   */
+  getStorageManager(): StorageManager {
+    return this.storageManager;
+  }
+
   getModuleStates(): Map<string, ModuleState> {
     return this.lifecycle.getAll();
   }
 
-  /**
-   * Get info about a specific module.
-   */
   getModuleInfo(name: string): LoadedModule | undefined {
     return this.loaded.find((m) => m.instance.manifest.name === name);
   }
@@ -308,17 +292,39 @@ export class ModuleLoader {
     }
   }
 
+  /**
+   * Setup per-module data and storage. Called after root is known.
+   */
+  async setupModuleData(mod: ModuleLike): Promise<void> {
+    if (!this.root) throw new Error('Root not set');
+
+    const { manifest } = mod;
+    const name = manifest.name;
+
+    // Create ModuleData (config + files)
+    const data = new ModuleData(this.root, name);
+    this.lifecycle.setModuleData(name, data);
+
+    // Create isolated storage
+    const storageConfig = manifest.storage ?? { driver: 'json' as const };
+    const storage = await this.storageManager.createModuleStorage(this.root, name, storageConfig);
+    this.lifecycle.setModuleStorage(name, storage);
+  }
+
   private async unloadModule(mod: LoadedModule): Promise<void> {
     const name = mod.instance.manifest.name;
 
     // Remove services
-    const removedServices = this.services.removeByProvider(name);
+    this.services.removeByProvider(name);
 
     // Run onDisable + onUnload
     if (mod.state === ModuleState.ENABLED) {
       await this.lifecycle.disable(name);
     }
     await this.lifecycle.unload(name);
+
+    // Close module storage
+    await this.storageManager.closeModule(name);
 
     // Run legacy onDestroy
     if (mod.instance.onDestroy) {
@@ -332,6 +338,9 @@ export class ModuleLoader {
     const desc = manifest.description ? ` - ${manifest.description}` : '';
     LitLogger.tree('Loader', '|-', `${manifest.name} v${manifest.version}${desc}`);
 
+    if (manifest.storage) {
+      LitLogger.tree('Loader', '| ', `Storage: ${manifest.storage.driver}`, 'debug');
+    }
     if (manifest.provides && manifest.provides.length > 0) {
       LitLogger.tree('Loader', '| ', `Provides: ${manifest.provides.join(', ')}`, 'debug');
     }

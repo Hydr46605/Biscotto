@@ -1,90 +1,115 @@
-import type { StorageConfig, StorageProvider, StorageDriver } from './types.ts';
+import type { StorageProvider, StorageDriver, ModuleStorageConfig, MysqlConfig } from './types.ts';
 import { JsonProvider } from './providers/json.provider.ts';
 import { SqliteProvider } from './providers/sqlite.provider.ts';
 import { YamlProvider } from './providers/yaml.provider.ts';
-import { MysqlProvider } from './providers/mysql.provider.ts';
+import { SharedMysqlPool, SharedMysqlProvider } from './providers/mysql.provider.ts';
 import { LitLogger } from '../logger.ts';
+import { resolve } from 'node:path';
 
+// ── Storage Manager ───────────────────────────────────────────────────────────
+
+/**
+ * Manages per-module isolated storage.
+ * Each module gets its own StorageProvider instance (own file, own DB, own table).
+ */
 export class StorageManager {
-  private provider: StorageProvider | null = null;
-  private namespaces = new Map<string, StorageProvider>();
+  private modules = new Map<string, StorageProvider>();
+  private mysqlPool: SharedMysqlPool | null = null;
 
-  constructor(private readonly config: StorageConfig) {}
-
-  async init(): Promise<void> {
-    this.provider = await this.create(this.config.driver);
-    LitLogger.info('Storage', `Initialized ${this.config.driver.toUpperCase()} storage`);
+  /**
+   * Initialize the shared MySQL pool if any module uses MySQL.
+   * Called once during bootstrap.
+   */
+  async initMysql(config: MysqlConfig): Promise<void> {
+    this.mysqlPool = new SharedMysqlPool(config);
+    await this.mysqlPool.init();
   }
 
   /**
-   * Get a namespaced storage instance.
-   * Each namespace gets its own table/collection/prefix.
+   * Create an isolated storage provider for a module.
+   *
+   * - json:   `.biscotto/data/<ModuleName>/store.json`
+   * - sqlite: `.biscotto/data/<ModuleName>/store.db`
+   * - yaml:   `.biscotto/data/<ModuleName>/store.yaml`
+   * - mysql:  table `<ModuleName>_store` (shared pool)
    */
-  namespace(name: string): NamespacedStorage {
-    if (!this.namespaces.has(name)) {
-      const prefixed = this.createPrefixed(name);
-      this.namespaces.set(name, prefixed);
+  async createModuleStorage(
+    root: string,
+    moduleName: string,
+    config: ModuleStorageConfig,
+  ): Promise<StorageProvider> {
+    const provider = await this.createProvider(root, moduleName, config.driver);
+    await provider.init();
+    this.modules.set(moduleName, provider);
+    LitLogger.debug('Storage', `Created ${config.driver.toUpperCase()} storage for ${moduleName}`);
+    return provider;
+  }
+
+  /** Get the storage provider for a module. */
+  getModuleStorage(moduleName: string): StorageProvider | undefined {
+    return this.modules.get(moduleName);
+  }
+
+  /** Close storage for a specific module. */
+  async closeModule(moduleName: string): Promise<void> {
+    const provider = this.modules.get(moduleName);
+    if (provider) {
+      await provider.close();
+      this.modules.delete(moduleName);
     }
-    return new NamespacedStorage(this.namespaces.get(name)!, name);
   }
 
-  /** Direct access to the raw provider (no namespacing). */
-  raw(): StorageProvider {
-    if (!this.provider) throw new Error('Storage not initialized');
-    return this.provider;
-  }
-
-  async close(): Promise<void> {
-    for (const [, ns] of this.namespaces) {
-      await ns.close();
+  /** Close all module storages. */
+  async closeAll(): Promise<void> {
+    for (const [, provider] of this.modules) {
+      await provider.close();
     }
-    await this.provider?.close();
-    this.namespaces.clear();
-    this.provider = null;
-    LitLogger.info('Storage', 'Storage closed');
+    this.modules.clear();
+
+    if (this.mysqlPool) {
+      await this.mysqlPool.close();
+      this.mysqlPool = null;
+    }
+
+    LitLogger.info('Storage', 'All storage closed');
   }
 
-  private async create(driver: StorageDriver): Promise<StorageProvider> {
+  // ── Internal ──────────────────────────────────────────────────────────────
+
+  private async createProvider(
+    root: string,
+    moduleName: string,
+    driver: StorageDriver,
+  ): Promise<StorageProvider> {
+    const dataDir = resolve(root, '.biscotto', 'data', moduleName);
+
     switch (driver) {
       case 'json': {
-        const path = this.config.json?.path ?? './data/store.json';
-        const p = new JsonProvider(path);
-        await p.init();
-        return p;
+        return new JsonProvider(resolve(dataDir, 'store.json'));
       }
       case 'sqlite': {
-        const path = this.config.sqlite?.path ?? './data/store.db';
-        const p = new SqliteProvider(path);
-        await p.init();
-        return p;
+        return new SqliteProvider(resolve(dataDir, 'store.db'));
       }
       case 'yaml': {
-        const path = this.config.yaml?.path ?? './data/store.yaml';
-        const p = new YamlProvider(path);
-        await p.init();
-        return p;
+        return new YamlProvider(resolve(dataDir, 'store.yaml'));
       }
       case 'mysql': {
-        if (!this.config.mysql) throw new Error('MySQL config is required');
-        const p = new MysqlProvider(this.config.mysql);
-        await p.init();
-        return p;
+        if (!this.mysqlPool) {
+          throw new Error('MySQL pool not initialized. Ensure DISCORD_MYSQL_* env vars are set.');
+        }
+        return new SharedMysqlProvider(this.mysqlPool, moduleName);
       }
       default:
         throw new Error(`Unknown storage driver: ${driver}`);
     }
   }
-
-  private createPrefixed(_namespace: string): StorageProvider {
-    // For now, we use the same underlying provider with key prefixing.
-    // In a future version, we could use separate tables/collections.
-    if (!this.provider) throw new Error('Storage not initialized');
-    return this.provider;
-  }
 }
 
+// ── NamespacedStorage (kept for backward compat) ──────────────────────────────
+
 /**
- * Namespaced storage wrapper that prefixes all keys.
+ * Key-prefix wrapper around a StorageProvider.
+ * Kept for backward compatibility but not recommended for new code.
  */
 export class NamespacedStorage {
   constructor(

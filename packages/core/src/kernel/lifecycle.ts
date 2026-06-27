@@ -1,7 +1,8 @@
 import type { Client } from 'discord.js';
 import { LitLogger } from './logger.ts';
 import type { ServiceRegistry } from './services.ts';
-import type { ConfigManager } from './module-config.ts';
+import type { ModuleData } from './module-config.ts';
+import type { StorageProvider } from './storage/types.ts';
 
 // ── Module State ──────────────────────────────────────────────────────────────
 
@@ -19,7 +20,8 @@ export enum ModuleState {
 export interface ModuleContext {
   readonly client: Client;
   readonly services: ServiceRegistry;
-  readonly config: ConfigManager;
+  readonly data: ModuleData;
+  readonly storage: StorageProvider;
   readonly logger: ModuleLogger;
 }
 
@@ -68,7 +70,8 @@ export class ModuleLifecycle {
   private hooks = new Map<string, LifecycleHooks>();
   private client: Client | null = null;
   private services: ServiceRegistry | null = null;
-  private configManager: ConfigManager | null = null;
+  private moduleData = new Map<string, ModuleData>();
+  private moduleStorage = new Map<string, StorageProvider>();
 
   setClient(client: Client): void {
     this.client = client;
@@ -78,8 +81,12 @@ export class ModuleLifecycle {
     this.services = services;
   }
 
-  setConfigManager(configManager: ConfigManager): void {
-    this.configManager = configManager;
+  setModuleData(name: string, data: ModuleData): void {
+    this.moduleData.set(name, data);
+  }
+
+  setModuleStorage(name: string, storage: StorageProvider): void {
+    this.moduleStorage.set(name, storage);
   }
 
   /**
@@ -138,10 +145,18 @@ export class ModuleLifecycle {
       throw new Error('Client not set on ModuleLifecycle');
     }
 
+    const data = this.moduleData.get(name);
+    const storage = this.moduleStorage.get(name);
+
+    if (!data || !storage) {
+      throw new Error(`ModuleData or StorageProvider not set for ${name}`);
+    }
+
     const ctx: ModuleContext = {
       client: this.client,
       services: this.services!,
-      config: this.configManager!,
+      data,
+      storage,
       logger: createModuleLogger(name),
     };
 
@@ -203,5 +218,7 @@ export class ModuleLifecycle {
   remove(name: string): void {
     this.states.delete(name);
     this.hooks.delete(name);
+    this.moduleData.delete(name);
+    this.moduleStorage.delete(name);
   }
 }

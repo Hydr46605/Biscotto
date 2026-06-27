@@ -8,6 +8,7 @@ export const manifest: ModuleManifest = {
     name: '{{AUTHOR}}',
     url: '{{AUTHOR_URL}}',
   },
+  // storage: { driver: 'json' },  // 'json' | 'sqlite' | 'yaml' | 'mysql'
   license: 'MIT',
   tags: [],
   // dependencies: { 'other-module': '^1.0.0' },

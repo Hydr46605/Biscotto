@@ -1,4 +1,4 @@
-import { defineModule, defineConfig } from '@biscotto/core';
+import { defineModule } from '@biscotto/core';
 import { manifest } from './manifest.js';
 import { pingCommand } from './commands/ping.js';
 import { onReady } from './listeners/ready.js';
@@ -12,20 +12,8 @@ import { modalComponents } from './components/modals.js';
 import { selectComponents } from './components/selects.js';
 {{/if}}
 
-const moduleConfig = defineConfig({
-  schema: {
-    greeting: { type: 'string', description: 'Greeting message', default: 'Hello!' },
-    enabled: { type: 'boolean', description: 'Enable/disable feature', default: true },
-  },
-  defaults: {
-    greeting: 'Hello!',
-    enabled: true,
-  },
-});
-
 export default defineModule({
   manifest,
-  config: moduleConfig,
   commands: [
     pingCommand,
   ],
@@ -42,7 +30,6 @@ export default defineModule({
   selects: selectComponents,
 {{/if}}
   onLoad(ctx) {
-    const greeting = ctx.config.get<string>(manifest.name, 'greeting');
-    ctx.logger.info(`${manifest.name} loaded with greeting: ${greeting}`);
+    ctx.logger.info(`${manifest.name} loaded`);
   },
 });
