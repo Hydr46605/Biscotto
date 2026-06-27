@@ -1,7 +1,5 @@
-import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
 import type { Command } from '../command.ts';
-import { readInstalled, writeInstalled, modulesDir } from '../fs.ts';
+import { readInstalled, writeInstalled } from '../fs.ts';
 
 export const enableCommand: Command = {
   name: 'enable',

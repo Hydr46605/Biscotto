@@ -1,7 +1,5 @@
-import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
 import type { Command } from '../command.ts';
-import { readInstalled, writeInstalled, modulesDir, isRunning } from '../fs.ts';
+import { readInstalled, writeInstalled, isRunning } from '../fs.ts';
 
 export const reloadCommand: Command = {
   name: 'reload',
