@@ -65,8 +65,8 @@ export const createCommand: Command = {
       vars: {
         MODULE_NAME: moduleName,
         DESCRIPTION: `A ${stackName} module for Biscotto`,
-        AUTHOR: 'Hydr46605',
-        AUTHOR_URL: 'https://github.com/Hydr46605',
+        AUTHOR: 'Author',
+        AUTHOR_URL: 'https://github.com/yourname',
       },
       features,
     });

@@ -29,6 +29,5 @@ export const config = {
   token: required('DISCORD_TOKEN'),
   clientId: required('DISCORD_CLIENT_ID'),
   guildId: process.env.DISCORD_GUILD_ID ?? null,
-  modulesPath: resolve(process.cwd(), 'src', 'modules'),
   mysql,
 } as const;

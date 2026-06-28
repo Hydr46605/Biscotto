@@ -95,7 +95,7 @@ export class StorageManager {
       }
       case 'mysql': {
         if (!this.mysqlPool) {
-          throw new Error('MySQL pool not initialized. Ensure DISCORD_MYSQL_* env vars are set.');
+          throw new Error('MySQL pool not initialized. Ensure MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, and MYSQL_DATABASE env vars are set.');
         }
         return new SharedMysqlProvider(this.mysqlPool, moduleName);
       }

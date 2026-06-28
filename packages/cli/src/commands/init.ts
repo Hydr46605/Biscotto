@@ -78,8 +78,8 @@ export const initCommand: Command = {
     scaffoldProject({
       projectDir,
       projectName,
-      author: 'Hydr46605',
-      authorUrl: 'https://github.com/Hydr46605',
+      author: 'Author',
+      authorUrl: 'https://github.com/yourname',
     });
 
     console.log(`  Initialized Biscotto project in ${projectDir}`);

@@ -11,7 +11,6 @@ import type {
   MessageContextMenuCommandInteraction,
   GatewayIntentBits,
 } from 'discord.js';
-import type { ConfigSchema } from '../kernel/data.ts';
 import type { StorageDriver } from '../kernel/storage/types.ts';
 
 // ── Module Manifest ───────────────────────────────────────────────────────────
@@ -34,7 +33,6 @@ export interface ModuleManifest {
   readonly requires?: string[];
   readonly provides?: string[];
   readonly storage?: { driver: StorageDriver };
-  readonly config?: ConfigSchema;
   readonly repository?: string;
   readonly license?: string;
   readonly tags?: string[];
