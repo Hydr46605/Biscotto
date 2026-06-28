@@ -14,49 +14,11 @@ interface Manifest {
 }
 
 function readManifest(moduleDir: string): Manifest | null {
-  const manifestPath = resolve(moduleDir, 'manifest.ts');
+  const manifestPath = resolve(moduleDir, 'biscotto.json');
   if (!existsSync(manifestPath)) return null;
 
   try {
-    const content = readFileSync(manifestPath, 'utf-8');
-    const nameMatch = content.match(/name:\s*['"]([^'"]+)['"]/);
-    const versionMatch = content.match(/version:\s*['"]([^'"]+)['"]/);
-    const descMatch = content.match(/description:\s*['"]([^'"]+)['"]/);
-
-    // Extract dependencies
-    const depsMatch = content.match(/dependencies:\s*\{([^}]+)\}/);
-    const deps: Record<string, string> = {};
-    if (depsMatch) {
-      const pairs = depsMatch[1].matchAll(/['"](\w[\w-]*)['"]\s*:\s*['"]([^'"]+)['"]/g);
-      for (const pair of pairs) {
-        deps[pair[1]] = pair[2];
-      }
-    }
-
-    // Extract provides/requires
-    const providesMatch = content.match(/provides:\s*\[([^\]]*)\]/);
-    const requiresMatch = content.match(/requires:\s*\[([^\]]*)\]/);
-
-    const provides = providesMatch
-      ? providesMatch[1].matchAll(/['"]([^'"]+)['"]/g)
-      : [];
-    const requires = requiresMatch
-      ? requiresMatch[1].matchAll(/['"]([^'"]+)['"]/g)
-      : [];
-
-    // Extract storage
-    const storageMatch = content.match(/storage:\s*\{\s*driver:\s*['"]([^'"]+)['"]/);
-    const storage = storageMatch ? { driver: storageMatch[1] } : undefined;
-
-    return {
-      name: nameMatch?.[1],
-      version: versionMatch?.[1],
-      description: descMatch?.[1],
-      dependencies: Object.keys(deps).length > 0 ? deps : undefined,
-      provides: [...provides].map((m) => m[1]),
-      requires: [...requires].map((m) => m[1]),
-      storage,
-    };
+    return JSON.parse(readFileSync(manifestPath, 'utf-8'));
   } catch {
     return null;
   }
@@ -90,7 +52,7 @@ export const statusCommand: Command = {
       console.log(`  State:  ${enabled ? 'enabled' : 'disabled'}`);
       if (manifest?.description) console.log(`  Description: ${manifest.description}`);
       if (manifest?.storage) {
-        console.log(`  Storage: ${manifest.storage.driver} (.biscotto/configs/${targetModule}/)`);
+        console.log(`  Storage: ${manifest.storage.driver} (.biscotto/data/${targetModule}/)`);
       }
       if (manifest?.dependencies) {
         const deps = Object.entries(manifest.dependencies);

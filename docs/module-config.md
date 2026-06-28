@@ -38,7 +38,7 @@ Each field in the schema defines:
 
 ## Using Config in Modules
 
-Pass the config to `defineModule` and access it via `ctx.config` in lifecycle hooks:
+Load your config inside `onLoad` via `ctx.data.loadConfig()`:
 
 ```ts
 import { defineModule, defineConfig } from '@biscotto/core';
@@ -52,42 +52,49 @@ const config = defineConfig({
 
 export default defineModule({
   manifest,
-  config,
   onLoad(ctx) {
-    const greeting = ctx.config.get<string>(manifest.name, 'greeting');
-    ctx.logger.info(`Greeting: ${greeting}`);
+    const cfg = ctx.data.loadConfig(config.schema, config.defaults);
+    ctx.logger.info(`Greeting: ${cfg.greeting}`);
   },
 });
 ```
 
 ## Accessing Config
 
-The `ModuleContext` provides these config methods:
+The `ModuleContext` provides these config methods via `ctx.data`:
 
 ```ts
-// Get a config value (returns T or undefined)
-const prefix = ctx.config.get<string>('mymod', 'prefix');
+onLoad(ctx) {
+  // Load full config with schema validation and defaults
+  const cfg = ctx.data.loadConfig(config.schema, config.defaults);
 
-// Set a config value (saves to disk immediately)
-ctx.config.set('mymod('mymod', 'prefix', '?');
+  // Get a single config value
+  const rate = ctx.data.getConfig<number>('taxRate');
 
-// Check if config exists
-const hasConfig = ctx.config.has('mymod');
+  // Set a single config value (saves to disk immediately)
+  ctx.data.setConfig('taxRate', 0.15);
 
-// Get all config keys
-const keys = ctx.config.keys('mymod');
+  // Get all config keys
+  const keys = ctx.data.configKeys();
+
+  // Check if config file exists
+  const exists = ctx.data.hasConfig();
+}
 ```
 
 ## Config Storage
 
-Configs are stored as JSON files in `.biscotto/configs/<module>.json`:
+Configs are stored as JSON files in `.biscotto/configs/<module>/config.json`:
 
 ```
 .biscotto/
 ├── configs/
-│   ├── zero.json
-│   ├── moderation.json
-│   └── welcome.json
+│   ├── zero/
+│   │   └── config.json
+│   ├── moderation/
+│   │   └── config.json
+│   └── welcome/
+│       └── config.json
 ├── modules/
 │   ├── zero/
 │   └── moderation/

@@ -1,8 +1,14 @@
 #!/usr/bin/env node
 
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { commands } from './commands/index.ts';
 import type { CommandContext } from './command.ts';
 import { findRoot } from './fs.ts';
+
+const VERSION: string = JSON.parse(
+  readFileSync(resolve(import.meta.dirname, '..', 'package.json'), 'utf-8'),
+).version;
 
 // ── Help ──────────────────────────────────────────────────────────────────────
 
@@ -59,7 +65,7 @@ async function main(): Promise<void> {
   }
 
   if (commandName === '--version' || commandName === '-v') {
-    console.log('biscotto v1.0.0');
+    console.log(`biscotto v${VERSION}`);
     return;
   }
 
