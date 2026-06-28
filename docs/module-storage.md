@@ -9,16 +9,21 @@ Each Biscotto module gets its own isolated data directory where it can store con
   configs/
     Shop/
       config.json         # Structured config (schema + defaults)
-      logo.png            # Module files (images, cards, data, etc.)
+      logo.png            # Free files (images, cards, data, etc.)
     Moderation/
       config.json
     Economia/
       config.json
-      economy.db          # SQLite database (if storage: sqlite)
+  data/
+    Shop/
+      store.json          # Key-value storage (json driver)
+    Economia/
+      store.db            # SQLite database (sqlite driver)
   modules/
     shop/
-      manifest.ts
-      index.ts
+      biscotto.json
+      dist/
+        index.js
 ```
 
 ## Per-Module Data Directory
@@ -137,18 +142,16 @@ Modules can expose their storage via the service registry:
 ```typescript
 // modules/economia/index.ts
 export default defineModule({
-  manifest: { name: 'Economia', storage: { driver: 'sqlite' } },
-  provides: ['economia-db'],
+  manifest: { name: 'Economia', storage: { driver: 'sqlite' }, provides: ['economia-db'] },
   onLoad(ctx) {
     // Expose this module's storage to others
-    ctx.services.provide('economia-db', ctx.storage, manifest.name);
+    ctx.services.provide('economia-db', ctx.storage, 'Economia');
   },
 });
 
 // modules/shop/index.ts
 export default defineModule({
-  manifest: { name: 'Shop', storage: { driver: 'sqlite' } },
-  requires: ['economia-db'],
+  manifest: { name: 'Shop', storage: { driver: 'sqlite' }, requires: ['economia-db'] },
   onLoad(ctx) {
     const econDB = ctx.services.require<StorageProvider>('economia-db');
     // Use the Economia module's database

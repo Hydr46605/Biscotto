@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 import type { Client } from 'discord.js';
 import type { BiscottoModule, ModuleManifest } from '../contracts/module.contract.ts';
 import { loadManifest, ManifestError } from './validation.ts';
-import { resolveDependencies, checkDependencies, DependencyError, type ResolvedModule } from './resolver.ts';
+import { resolveDependencies, checkDependencies, checkServiceRequirements, DependencyError, type ResolvedModule } from './resolver.ts';
 import { LitLogger } from './logger.ts';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -155,6 +155,13 @@ export async function loadFromDisk(
       return { modules: [], errors: [...errors, { name: 'resolver', error: error.message }] };
     }
     throw error;
+  }
+
+  // Check service requirements (requires/provides)
+  const serviceIssues = checkServiceRequirements(ordered, BUILTIN_NAMES);
+  for (const issue of serviceIssues) {
+    const msg = `Missing services: ${issue.missing.join(', ')}`;
+    LitLogger.warn('DynLoader', `${issue.module}: ${msg}`);
   }
 
   // Dynamically import each module

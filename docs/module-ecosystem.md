@@ -46,6 +46,15 @@ If a dependency is missing or has a version conflict, Biscotto will show an erro
 ✗ Module "mod-tools" not found (required by "admin-panel")
 ```
 
+### Dependencies vs Requires
+
+| Field | Purpose | Where it goes | When checked |
+|-------|---------|---------------|-------------|
+| `dependencies` | Module-level deps (version, load order) | `manifest.dependencies` | Boot time |
+| `requires` | Service deps (APIs other modules expose) | `manifest.requires` | Runtime (via `ctx.services.require()`) |
+
+Use `dependencies` for modules that must be loaded before yours. Use `requires` for services your module calls at runtime.
+
 ---
 
 ## Service Registry
@@ -107,9 +116,9 @@ export default defineModule({
       async execute(ctx) {
         const ui = ctx.services.require('ui-builder');
 
-        const container = ui.createContainer('Shop')
-          .ui.addField(container, 'Sword', '100 gold')
-          .ui.addField(container, 'Shield', '75 gold');
+        const container = ui.createContainer('Shop');
+        ui.addField(container, 'Sword', '100 gold');
+        ui.addField(container, 'Shield', '75 gold');
 
         await ui.replyWithContainer(ctx, container);
       },
@@ -183,9 +192,11 @@ Lifecycle hooks receive a `ModuleContext`:
 
 ```typescript
 interface ModuleContext {
-  client: Client;           // Discord.js client
-  services: ServiceRegistry; // Service registry
-  logger: ModuleLogger;     // Scoped logger
+  readonly client: Client;           // Discord.js client
+  readonly services: ServiceRegistry; // Service registry
+  readonly data: ModuleData;         // Config + free file access
+  readonly storage: StorageProvider; // Isolated key-value storage
+  readonly logger: ModuleLogger;     // Scoped logger
 }
 ```
 
