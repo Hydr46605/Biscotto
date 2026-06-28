@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g. 1.7.1)'
+        description: 'Version (e.g. 1.8.0)'
         required: true
         type: string
       dry-run:
@@ -103,6 +103,32 @@ jobs:
 
           cat CHANGELOG_BODY.md
 
+      - name: Update CHANGELOG.md
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          DATE=$(date +%Y-%m-%d)
+
+          if [ ! -f CHANGELOG.md ]; then
+            echo "# Changelog" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+          fi
+
+          # Prepend new release section after the header
+          {
+            echo "## v${VERSION} (${DATE})"
+            echo ""
+            cat CHANGELOG_BODY.md
+            echo ""
+            # Append existing content after header (skip first 2 lines if they are "# Changelog" + blank)
+            if [ -f CHANGELOG.md ]; then
+              tail -n +3 CHANGELOG.md
+            fi
+          } > CHANGELOG_NEW.md
+
+          mv CHANGELOG_NEW.md CHANGELOG.md
+
+          cat CHANGELOG.md
+
       - name: Commit and tag
         run: |
           git add -A
@@ -124,13 +150,7 @@ jobs:
           prerelease: false
 
       - name: Publish to npm
-        if: ${{ inputs.dry-run == false && github.event_name == 'workflow_dispatch' }}
-        run: npm publish --workspaces --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish to npm (tag push)
-        if: ${{ github.event_name == 'push' }}
+        if: ${{ inputs.dry-run == false }}
         run: npm publish --workspaces --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -141,4 +161,8 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Version**: v${{ steps.version.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Tag**: \`v${{ steps.version.outputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Published**: Yes" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ inputs.dry-run }}" = "true" ]; then
+            echo "- **Published**: No (dry run)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- **Published**: Yes" >> "$GITHUB_STEP_SUMMARY"
+          fi

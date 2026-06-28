@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 import type { Command } from '../command.ts';
@@ -28,22 +28,6 @@ function gitCommit(dir: string, message: string): void {
   }
 }
 
-function gitRemoteAdd(dir: string, url: string): void {
-  try {
-    execSync(`git remote add origin ${url}`, { cwd: dir, stdio: 'ignore' });
-  } catch {
-    // remote may already exist
-  }
-}
-
-function gitPush(dir: string, branch: string): void {
-  try {
-    execSync(`git push -u origin ${branch}`, { cwd: dir, stdio: 'inherit' });
-  } catch {
-    // push may fail
-  }
-}
-
 function ghRepoCreate(dir: string, name: string, isPrivate: boolean): string | null {
   try {
     const privateFlag = isPrivate ? '--private' : '--public';
@@ -59,22 +43,16 @@ function ghRepoCreate(dir: string, name: string, isPrivate: boolean): string | n
 }
 
 function readManifest(moduleDir: string): { name: string; version: string; description: string } | null {
-  const manifestPath = resolve(moduleDir, 'manifest.ts');
-  if (!existsSync(manifestPath)) return null;
+  const filePath = resolve(moduleDir, 'biscotto.json');
+  if (!existsSync(filePath)) return null;
 
-  const content = readFileSync(manifestPath, 'utf-8');
-
-  const nameMatch = content.match(/name:\s*['"]([^'"]+)['"]/);
-  const versionMatch = content.match(/version:\s*['"]([^'"]+)['"]/);
-  const descMatch = content.match(/description:\s*['"]([^'"]+)['"]/);
-
-  if (!nameMatch || !versionMatch || !descMatch) return null;
-
-  return {
-    name: nameMatch[1],
-    version: versionMatch[1],
-    description: descMatch[1],
-  };
+  try {
+    const data = JSON.parse(readFileSync(filePath, 'utf-8'));
+    if (!data.name || !data.version || !data.description) return null;
+    return { name: data.name, version: data.version, description: data.description };
+  } catch {
+    return null;
+  }
 }
 
 function addToRegistry(manifest: { name: string; version: string; description: string }, repoUrl: string): void {
@@ -117,7 +95,7 @@ export const publishCommand: Command = {
     // Read manifest first
     const manifest = readManifest(moduleDir);
     if (!manifest) {
-      console.log('  Could not read module manifest');
+      console.log('  Could not read module manifest (biscotto.json)');
       return;
     }
 

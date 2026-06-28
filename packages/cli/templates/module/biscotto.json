@@ -1,0 +1,11 @@
+{
+  "name": "{{MODULE_NAME}}",
+  "version": "0.1.0",
+  "description": "{{DESCRIPTION}}",
+  "author": {
+    "name": "{{AUTHOR}}",
+    "url": "{{AUTHOR_URL}}"
+  },
+  "entry": "dist/index.js",
+  "license": "MIT"
+}

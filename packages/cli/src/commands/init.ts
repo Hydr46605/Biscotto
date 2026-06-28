@@ -3,17 +3,17 @@ import { resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 import type { Command } from '../command.ts';
 import { ensureBiscottoDir, writeInstalled } from '../fs.ts';
-import { copyTemplate, copyFile, getTemplatesDir, hasTemplates } from '../template.ts';
+import { copyFile, getTemplatesDir, hasTemplates } from '../template.ts';
 
-interface InitOptions {
-  projectDir: string;
-  projectName: string;
-  author: string;
-  authorUrl: string;
+function gitConfig(key: string): string | undefined {
+  try {
+    return execSync(`git config user.${key}`, { encoding: 'utf-8' }).trim() || undefined;
+  } catch {
+    return undefined;
+  }
 }
 
-function scaffoldProject(opts: InitOptions): void {
-  const { projectDir, projectName, author, authorUrl } = opts;
+function scaffoldProject(projectDir: string, projectName: string): void {
   const templatesDir = getTemplatesDir();
 
   if (!hasTemplates()) {
@@ -47,19 +47,11 @@ function scaffoldProject(opts: InitOptions): void {
   mkdirSync(resolve(projectDir, 'src'), { recursive: true });
   copyFile(srcIndexSrc, srcIndexDest);
 
-  // Copy module template as default module
-  const moduleSrc = resolve(templatesDir, 'module');
-  const moduleDest = resolve(projectDir, 'modules', 'zero');
-  mkdirSync(moduleDest, { recursive: true });
-  copyTemplate(moduleSrc, moduleDest, {
-    vars: {
-      MODULE_NAME: 'zero',
-      DESCRIPTION: 'Core module for Biscotto',
-      AUTHOR: author,
-      AUTHOR_URL: authorUrl,
-    },
-    features: ['commands'],
-  });
+  // Write .gitignore
+  const gitignoreDest = resolve(projectDir, '.gitignore');
+  if (!existsSync(gitignoreDest)) {
+    writeFileSync(gitignoreDest, 'node_modules/\n.biscotto/\n');
+  }
 }
 
 export const initCommand: Command = {
@@ -75,19 +67,14 @@ export const initCommand: Command = {
       return;
     }
 
-    scaffoldProject({
-      projectDir,
-      projectName,
-      author: 'Author',
-      authorUrl: 'https://github.com/yourname',
-    });
+    scaffoldProject(projectDir, projectName);
 
     console.log(`  Initialized Biscotto project in ${projectDir}`);
     console.log('');
-    console.log(`  Next steps:`);
+    console.log('  Next steps:');
     console.log(`    cd ${projectName}`);
-    console.log(`    npm install`);
-    console.log(`    # Edit .env with your bot token`);
-    console.log(`    biscotto dev`);
+    console.log('    npm install');
+    console.log('    # Edit .env with your bot token');
+    console.log('    biscotto dev');
   },
 };

@@ -15,52 +15,47 @@ function isValidSemver(version: string): boolean {
   return /^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?(\+[a-zA-Z0-9.]+)?$/.test(version);
 }
 
-function checkManifest(moduleDir: string): string[] {
+function readManifest(moduleDir: string): { manifest: Manifest; errors: string[] } {
   const errors: string[] = [];
-  const manifestPath = resolve(moduleDir, 'manifest.ts');
+  const filePath = resolve(moduleDir, 'biscotto.json');
 
-  if (!existsSync(manifestPath)) {
-    errors.push('manifest.ts not found');
-    return errors;
-  }
-
-  const content = readFileSync(manifestPath, 'utf-8');
-
-  // Basic field checks (name appears in manifest.name: 'xxx')
-  if (!content.includes('name:')) {
-    errors.push('Missing name field');
-  }
-  if (!content.includes('version:')) {
-    errors.push('Missing version field');
-  }
-  if (!content.includes('description:')) {
-    errors.push('Missing description field');
-  }
-  if (!content.includes('author:')) {
-    errors.push('Missing author field');
+  if (!existsSync(filePath)) {
+    errors.push('biscotto.json not found');
+    return { manifest: {}, errors };
   }
 
-  // Version format
-  const versionMatch = content.match(/version:\s*['"]([^'"]+)['"]/);
-  if (versionMatch && !isValidSemver(versionMatch[1])) {
-    errors.push(`Invalid version format: ${versionMatch[1]}`);
+  let manifest: Manifest;
+  try {
+    manifest = JSON.parse(readFileSync(filePath, 'utf-8'));
+  } catch {
+    errors.push('biscotto.json is not valid JSON');
+    return { manifest: {}, errors };
   }
 
-  return errors;
+  if (!manifest.name) errors.push('Missing name field');
+  if (!manifest.version) errors.push('Missing version field');
+  if (!manifest.description) errors.push('Missing description field');
+  if (!manifest.author) errors.push('Missing author field');
+
+  if (manifest.version && !isValidSemver(manifest.version)) {
+    errors.push(`Invalid version format: ${manifest.version}`);
+  }
+
+  return { manifest, errors };
 }
 
 function checkEntry(moduleDir: string): string[] {
   const errors: string[] = [];
-  const indexPath = resolve(moduleDir, 'index.ts');
+  const indexPath = resolve(moduleDir, 'src', 'index.ts');
 
   if (!existsSync(indexPath)) {
-    errors.push('index.ts not found');
+    errors.push('src/index.ts not found');
     return errors;
   }
 
   const content = readFileSync(indexPath, 'utf-8');
   if (!content.includes('defineModule')) {
-    errors.push('index.ts does not export defineModule');
+    errors.push('src/index.ts does not export defineModule');
   }
 
   return errors;
@@ -68,7 +63,7 @@ function checkEntry(moduleDir: string): string[] {
 
 function checkPlaceholders(moduleDir: string): string[] {
   const warnings: string[] = [];
-  const files = ['manifest.ts', 'index.ts', 'commands/ping.ts', 'listeners/ready.ts'];
+  const files = ['biscotto.json', 'src/index.ts'];
 
   for (const file of files) {
     const filePath = resolve(moduleDir, file);
@@ -107,8 +102,8 @@ export const packCommand: Command = {
     let allWarnings: string[] = [];
 
     // Check manifest
-    console.log('  Checking manifest...');
-    const manifestErrors = checkManifest(moduleDir);
+    console.log('  Checking biscotto.json...');
+    const { errors: manifestErrors } = readManifest(moduleDir);
     if (manifestErrors.length === 0) {
       console.log('  ✓ Manifest valid');
     } else {
