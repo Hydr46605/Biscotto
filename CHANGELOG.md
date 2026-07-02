@@ -1,4 +1,8 @@
-# Changelog
+## v1.9.0 (2026-07-02)
+
+## What's Changed
+
+**Full Changelog**: https://github.com/Hydr46605/Biscotto/compare/v1.9.0...v1.9.0
 
 All notable changes to Biscotto will be documented in this file. The format
 follows [Keep a Changelog](https://keepachangelog.com/) and the project
