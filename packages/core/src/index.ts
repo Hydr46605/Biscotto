@@ -1,8 +1,15 @@
 import { resolve } from 'node:path';
-import { Events } from 'discord.js';
-import { createClient, config, LitLogger, ModuleLoader, CommandRegistrar, InteractionRouter } from './kernel/index.ts';
+import {
+  createClient,
+  config,
+  LitLogger,
+  ModuleLoader,
+  CommandRegistrar,
+  InteractionRouter,
+} from './kernel/index.ts';
 import { loadFromDisk } from './kernel/discovery.ts';
 import { modules as builtinModules } from './modules/index.ts';
+import { setupHotReload } from './kernel/hotreload.ts';
 
 // Re-export API helpers for module authors
 export {
@@ -16,6 +23,7 @@ export {
   defineEvent,
   defineModule,
 } from './kernel/define.ts';
+
 export type {
   CommandContext,
   CommandConfig,
@@ -34,7 +42,9 @@ export type {
   EventConfig,
   ModuleConfig,
 } from './kernel/define.ts';
+
 export type { ModuleManifest, BiscottoModule } from './contracts/module.contract.ts';
+export type { LifecycleHooks } from './kernel/define.ts';
 export { ServiceRegistry } from './kernel/services.ts';
 export type { ServiceInfo } from './kernel/services.ts';
 export { ModuleLifecycle, ModuleState } from './kernel/lifecycle.ts';
@@ -42,7 +52,23 @@ export type { ModuleContext } from './kernel/lifecycle.ts';
 export { ModuleData, defineConfig } from './kernel/data.ts';
 export type { ConfigSchema, ConfigField } from './kernel/data.ts';
 export type { StorageProvider, StorageDriver } from './kernel/storage/types.ts';
+export type { MysqlConfig } from './kernel/storage/types.ts';
 
+/**
+ * Bootstraps a Biscotto bot: reads env, loads modules (builtin + installed),
+ * creates the Discord client, registers commands, mounts the interaction
+ * router, wires the hot-reload poller, and logs in.
+ *
+ * Intended to be called by the user from `src/index.ts`:
+ *
+ *   import 'dotenv/config';
+ *   import { run } from '@biscotto/core';
+ *   run();
+ *
+ * `run()` is invoked automatically only when this file is the program
+ * entry point (`require.main === module`). Importing `@biscotto/core`
+ * for type-only or programmatic reasons will NOT trigger a bot launch.
+ */
 export async function run(): Promise<void> {
   LitLogger.banner();
   LitLogger.info('Bootstrap', 'Initializing Biscotto...');
@@ -70,7 +96,7 @@ export async function run(): Promise<void> {
     await LitLogger.measure('Bootstrap', 'External modules', () => loader.loadAll(externalModules, undefined, root));
   }
 
-  // Setup per-module data and storage
+  // Per-module data and storage
   const allModules = [...builtinModules, ...externalModules];
   for (const mod of allModules) {
     await loader.setupModuleData(mod);
@@ -120,14 +146,13 @@ export async function run(): Promise<void> {
     LitLogger.info('Bootstrap', `Services: ${services.map((s) => `${s.name} (by ${s.provider})`).join(', ')}`);
   }
 
-  // Ready event
-  client.once(Events.ClientReady, (readyClient) => {
-    LitLogger.ready(
-      readyClient.user.tag,
-      readyClient.guilds.cache.size,
-      (readyClient as any).uptime ?? 0,
-    );
-  });
+  // Ready logging is owned by the `zero` module's
+  // `defineEvent({ event: 'ready' })` listener. No additional handler here:
+  // keeping a single owner avoids double-firing.
+
+  // Wire the hot-reload poller so `biscotto reload <module>` actually
+  // reloads the named in-process module without restarting the bot.
+  setupHotReload(loader, root);
 
   // Graceful shutdown
   process.on('SIGINT', async () => {
@@ -143,7 +168,14 @@ export async function run(): Promise<void> {
   await LitLogger.measure('Bootstrap', 'Discord login', () => client.login(config.token));
 }
 
-run().catch((error) => {
-  LitLogger.error('Fatal', `Failed to start: ${error}`);
-  process.exit(1);
-});
+/**
+ * Auto-launch guard. Wrapped so importing the package for type-only or
+ * programmatic reasons (e.g. Vitest, programmatic embedders) does NOT
+ * immediately start the Discord client.
+ */
+if (require.main === module) {
+  run().catch((error) => {
+    LitLogger.error('Fatal', `Failed to start: ${error}`);
+    process.exit(1);
+  });
+}

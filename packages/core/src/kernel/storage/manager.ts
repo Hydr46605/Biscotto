@@ -10,16 +10,17 @@ import { resolve } from 'node:path';
 
 /**
  * Manages per-module isolated storage.
- * Each module gets its own StorageProvider instance (own file, own DB, own table).
+ * Each module gets its own StorageProvider instance (own file, own DB,
+ * own table). All MySQL modules share a single connection pool.
+ *
+ * Renamed from `StorageManager` to `ModuleStorageManager` in v1.9.0 to
+ * make the "per-module" semantics explicit (legacy global StorageManager
+ * was retired earlier).
  */
-export class StorageManager {
+export class ModuleStorageManager {
   private modules = new Map<string, StorageProvider>();
   private mysqlPool: SharedMysqlPool | null = null;
 
-  /**
-   * Initialize the shared MySQL pool if any module uses MySQL.
-   * Called once during bootstrap.
-   */
   async initMysql(config: MysqlConfig): Promise<void> {
     this.mysqlPool = new SharedMysqlPool(config);
     await this.mysqlPool.init();
@@ -27,11 +28,11 @@ export class StorageManager {
 
   /**
    * Create an isolated storage provider for a module.
-   *
-   * - json:   `.biscotto/data/<ModuleName>/store.json`
-   * - sqlite: `.biscotto/data/<ModuleName>/store.db`
-   * - yaml:   `.biscotto/data/<ModuleName>/store.yaml`
-   * - mysql:  table `<ModuleName>_store` (shared pool)
+   * Storage targets:
+   *   json:   .biscotto/data/<ModuleName>/store.json
+   *   sqlite: .biscotto/data/<ModuleName>/store.db
+   *   yaml:   .biscotto/data/<ModuleName>/store.yaml
+   *   mysql:  table <ModuleName>_store (shared pool)
    */
   async createModuleStorage(
     root: string,
@@ -45,12 +46,10 @@ export class StorageManager {
     return provider;
   }
 
-  /** Get the storage provider for a module. */
   getModuleStorage(moduleName: string): StorageProvider | undefined {
     return this.modules.get(moduleName);
   }
 
-  /** Close storage for a specific module. */
   async closeModule(moduleName: string): Promise<void> {
     const provider = this.modules.get(moduleName);
     if (provider) {
@@ -59,7 +58,6 @@ export class StorageManager {
     }
   }
 
-  /** Close all module storages. */
   async closeAll(): Promise<void> {
     for (const [, provider] of this.modules) {
       await provider.close();
@@ -73,8 +71,6 @@ export class StorageManager {
 
     LitLogger.info('Storage', 'All storage closed');
   }
-
-  // ── Internal ──────────────────────────────────────────────────────────────
 
   private async createProvider(
     root: string,
@@ -101,61 +97,6 @@ export class StorageManager {
       }
       default:
         throw new Error(`Unknown storage driver: ${driver}`);
-    }
-  }
-}
-
-// ── NamespacedStorage (kept for backward compat) ──────────────────────────────
-
-/**
- * Key-prefix wrapper around a StorageProvider.
- * Kept for backward compatibility but not recommended for new code.
- */
-export class NamespacedStorage {
-  constructor(
-    private readonly provider: StorageProvider,
-    private readonly namespace: string,
-  ) {}
-
-  private prefix(key: string): string {
-    return `${this.namespace}:${key}`;
-  }
-
-  async get<T = unknown>(key: string): Promise<T | null> {
-    return this.provider.get<T>(this.prefix(key));
-  }
-
-  async set<T = unknown>(key: string, value: T): Promise<void> {
-    return this.provider.set<T>(this.prefix(key), value);
-  }
-
-  async delete(key: string): Promise<boolean> {
-    return this.provider.delete(this.prefix(key));
-  }
-
-  async has(key: string): Promise<boolean> {
-    return this.provider.has(this.prefix(key));
-  }
-
-  async all<T = unknown>(): Promise<Map<string, T>> {
-    const all = await this.provider.all<T>();
-    const prefix = this.prefix('');
-    const filtered = new Map<string, T>();
-    for (const [key, value] of all) {
-      if (key.startsWith(prefix)) {
-        filtered.set(key.slice(prefix.length), value);
-      }
-    }
-    return filtered;
-  }
-
-  async clear(): Promise<void> {
-    const all = await this.provider.all();
-    const prefix = this.prefix('');
-    for (const key of all.keys()) {
-      if (key.startsWith(prefix)) {
-        await this.provider.delete(key);
-      }
     }
   }
 }

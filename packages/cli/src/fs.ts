@@ -1,6 +1,26 @@
-import { readFileSync, writeFileSync, existsSync, unlinkSync, mkdirSync, appendFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, unlinkSync, mkdirSync, appendFileSync, renameSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { execSync, spawn, type ChildProcess } from 'node:child_process';
+
+// ── Installed Modules ─────────────────────────────────────────────────────────────────
+//
+// `InstalledModule` / `InstalledFile` are defined canonically in
+// `@biscotto/core` (`core/src/kernel/registry.ts`). The CLI re-declares
+// the same fields here to keep runtime dependency-free; the layout must
+// stay in lock-step with the core types.
+
+export interface InstalledModule {
+  source: string;
+  version: string;
+  installedAt: string;
+  builtAt?: string;
+  enabled?: boolean;
+}
+
+export interface InstalledFile {
+  version: number;
+  modules: Record<string, InstalledModule>;
+}
 
 // ── Paths ─────────────────────────────────────────────────────────────────────
 
@@ -32,6 +52,10 @@ export function installedFile(root: string): string {
 
 export function modulesDir(root: string): string {
   return resolve(biscottoDir(root), 'modules');
+}
+
+export function reloadFlagFile(root: string): string {
+  return resolve(biscottoDir(root), 'reload.json');
 }
 
 export function ensureBiscottoDir(root: string): void {
@@ -119,18 +143,60 @@ export function spawnBot(root: string, entry: string = 'src/index.ts'): ChildPro
   return child;
 }
 
-export function stopBot(root: string): boolean {
+/**
+ * Asynchronously waits for a process to exit, polling every 100 ms up to
+ * `timeoutMs` milliseconds. Resolves true if exited, false on timeout.
+ * Uses an interval-driven poll so the event loop remains responsive
+ * (the previous implementation busy-looped on Date.now()).
+ */
+function awaitExit(pid: number, timeoutMs: number): Promise<boolean> {
+  return new Promise<boolean>((resolveFn) => {
+    if (!isAlive(pid)) {
+      resolveFn(true);
+      return;
+    }
+    const timer = setInterval(() => {
+      if (!isAlive(pid)) {
+        clearInterval(timer);
+        resolveFn(true);
+      }
+    }, 100);
+    const guard = setTimeout(() => {
+      clearInterval(timer);
+      resolveFn(false);
+    }, timeoutMs);
+    // Allow the process to exit even if promises hang in unref environments
+    timer.unref?.();
+    guard.unref?.();
+  });
+}
+
+/**
+ * Stop the running bot gracefully: SIGTERM, wait up to 5 s, then SIGKILL
+ * (Windows: `taskkill /T /F`).
+ */
+export async function stopBot(root: string, timeoutMs = 5_000): Promise<boolean> {
   const pid = getPid(root);
   if (pid === null) return false;
-  if (!isAlive(pid)) { removePid(root); return false; }
-
-  try { process.kill(pid, 'SIGTERM'); } catch { removePid(root); return false; }
-
-  const deadline = Date.now() + 5_000;
-  while (Date.now() < deadline) {
-    if (!isAlive(pid)) { removePid(root); return true; }
+  if (!isAlive(pid)) {
+    removePid(root);
+    return false;
   }
 
+  try {
+    process.kill(pid, 'SIGTERM');
+  } catch {
+    removePid(root);
+    return false;
+  }
+
+  const exited = await awaitExit(pid, timeoutMs);
+  if (exited) {
+    removePid(root);
+    return true;
+  }
+
+  // Force kill after timeout.
   try {
     if (process.platform === 'win32') {
       execSync(`taskkill /PID ${pid} /T /F`, { stdio: 'ignore' });
@@ -145,18 +211,10 @@ export function stopBot(root: string): boolean {
 
 // ── Installed Modules ─────────────────────────────────────────────────────────
 
-export interface InstalledModule {
-  source: string;
-  version: string;
-  installedAt: string;
-  builtAt?: string;
-  enabled?: boolean;
-}
-
-export interface InstalledFile {
-  version: number;
-  modules: Record<string, InstalledModule>;
-}
+/**
+ * Single source of truth for an installed module's record is defined in
+ * `@biscotto/core` (`core/src/kernel/registry.ts`) and re-exported here.
+ */
 
 export function readInstalled(root: string): InstalledFile {
   const file = installedFile(root);
@@ -171,6 +229,20 @@ export function readInstalled(root: string): InstalledFile {
 export function writeInstalled(root: string, data: InstalledFile): void {
   ensureBiscottoDir(root);
   writeFileSync(installedFile(root), JSON.stringify(data, null, 2), 'utf-8');
+}
+
+/**
+ * Atomic write-rename of a JSON payload to `path`. Cross-platform via
+ * `node:fs#renameSync`, which uses `rename(2)` on POSIX and
+ * `MoveFileEx(MOVEFILE_REPLACE_EXISTING)` on Windows \u2014 both are
+ * atomic at the kernel level for same-volume moves. Avoids the
+ * shell-escaping risks of shelling out to mv/move.
+ */
+export function writeAtomicJson(path: string, payload: unknown): void {
+  ensureBiscottoDir(dirname(path));
+  const tmp = `${path}.tmp`;
+  writeFileSync(tmp, JSON.stringify(payload, null, 2), 'utf-8');
+  renameSync(tmp, path);
 }
 
 // ── Logging ───────────────────────────────────────────────────────────────────

@@ -124,6 +124,9 @@ export class InteractionRouter {
 
     try {
       await command.execute(interaction, this.client);
+      // Apply cooldown only after a successful invocation — errors do NOT
+      // consume the slot so users can retry.
+      this.pipeline.commitCooldown(interaction, command, `/${command.data.name}`);
       LitLogger.debug('Router', `/${interaction.commandName} completed`);
     } catch (error) {
       LitLogger.error('Router', `Error executing /${interaction.commandName}: ${error}`);
@@ -150,6 +153,7 @@ export class InteractionRouter {
 
     try {
       await handler.execute(interaction, this.client);
+      this.pipeline.commitCooldown(interaction, handler, `btn:${handler.customId}`);
       LitLogger.debug('Router', `Button ${interaction.customId} completed`);
     } catch (error) {
       LitLogger.error('Router', `Error executing button ${interaction.customId}: ${error}`);
@@ -176,6 +180,7 @@ export class InteractionRouter {
 
     try {
       await handler.execute(interaction, this.client);
+      this.pipeline.commitCooldown(interaction, handler, `select:${handler.customId}`);
       LitLogger.debug('Router', `Select menu ${interaction.customId} completed`);
     } catch (error) {
       LitLogger.error('Router', `Error executing select menu ${interaction.customId}: ${error}`);
@@ -233,6 +238,7 @@ export class InteractionRouter {
 
     try {
       await handler.execute(interaction, this.client);
+      this.pipeline.commitCooldown(interaction, handler, `userMenu:${handler.name}`);
       LitLogger.debug('Router', `User context menu ${interaction.commandName} completed`);
     } catch (error) {
       LitLogger.error('Router', `Error executing user context menu ${interaction.commandName}: ${error}`);
@@ -259,6 +265,7 @@ export class InteractionRouter {
 
     try {
       await handler.execute(interaction, this.client);
+      this.pipeline.commitCooldown(interaction, handler, `msgMenu:${handler.name}`);
       LitLogger.debug('Router', `Message context menu ${interaction.commandName} completed`);
     } catch (error) {
       LitLogger.error('Router', `Error executing message context menu ${interaction.commandName}: ${error}`);

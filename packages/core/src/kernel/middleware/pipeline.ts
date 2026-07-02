@@ -13,20 +13,24 @@ export interface MiddlewareResult {
   readonly reply?: string;
 }
 
+/**
+ * Runs pre-execution middleware (cooldown read + permission check).
+ *
+ * Important: cooldown is NO LONGER set here on success. That used to penalize
+ * users for handler errors — if `command.execute(...)` threw, the user was
+ * still locked out. The router now calls `commitCooldown()` only after a
+ * successful invocation, so failed handler runs free the user to retry.
+ */
 export class MiddlewarePipeline {
   private cooldowns = new CooldownManager();
   private permissions = new PermissionChecker();
 
-  /**
-   * Run all middleware checks for an interaction.
-   * Returns { allowed: true } if all checks pass, or { allowed: false, reply } with an error message.
-   */
   async run(
     interaction: Interaction,
     config: MiddlewareConfig,
     actionId: string,
   ): Promise<MiddlewareResult> {
-    // Cooldown check
+    // Cooldown check (read-only).
     if (config.cooldown && config.cooldown > 0) {
       const userId = interaction.user.id;
       const remaining = this.cooldowns.remaining(userId, actionId);
@@ -36,12 +40,9 @@ export class MiddlewarePipeline {
         LitLogger.debug('Middleware', `Cooldown blocked ${interaction.user.tag} on ${actionId} (${remaining}s remaining)`);
         return { allowed: false, reply };
       }
-
-      // Set cooldown on successful check
-      this.cooldowns.set(userId, actionId, config.cooldown);
     }
 
-    // Permission check (only for guild interactions)
+    // Permission check (only for guild interactions).
     if (config.permissions && config.permissions.length > 0) {
       if (!interaction.inGuild() || !interaction.member) {
         return { allowed: false, reply: 'This command can only be used in a server.' };
@@ -62,15 +63,23 @@ export class MiddlewarePipeline {
   }
 
   /**
-   * Get the cooldown manager (for external use).
+   * Apply the cooldown AFTER the handler succeeded. Called by the router
+   * once `execute()` resolves without throwing.
    */
+  commitCooldown(
+    interaction: Interaction,
+    config: MiddlewareConfig,
+    actionId: string,
+  ): void {
+    if (config.cooldown && config.cooldown > 0) {
+      this.cooldowns.set(interaction.user.id, actionId, config.cooldown);
+    }
+  }
+
   getCooldowns(): CooldownManager {
     return this.cooldowns;
   }
 
-  /**
-   * Get the permission checker (for external use).
-   */
   getPermissions(): PermissionChecker {
     return this.permissions;
   }

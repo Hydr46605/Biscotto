@@ -1,2 +1,3 @@
-export type { StorageProvider, StorageDriver, ModuleStorageConfig, MysqlConfig } from './types.ts';
-export { StorageManager, NamespacedStorage } from './manager.ts';
+export type { StorageProvider, StorageDriver, MysqlConfig } from './types.ts';
+export { ModuleStorageManager } from './manager.ts';
+export { SharedMysqlPool, SharedMysqlProvider } from './providers/mysql.provider.ts';

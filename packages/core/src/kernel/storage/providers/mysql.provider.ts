@@ -1,95 +1,20 @@
+import type {
+  RowDataPacket,
+  ResultSetHeader,
+  Pool,
+} from 'mysql2/promise';
 import type { StorageProvider, MysqlConfig } from '../types.ts';
 import { LitLogger } from '../../logger.ts';
 
 const log = LitLogger.child('Storage:MySQL');
 
-export class MysqlProvider implements StorageProvider {
-  readonly driver = 'mysql' as const;
-  private pool: any = null;
-  private readonly tableName: string;
-  private readonly config: MysqlConfig;
-
-  constructor(config: MysqlConfig, moduleName: string) {
-    this.config = config;
-    this.tableName = `${moduleName}_store`;
-  }
-
-  async init(): Promise<void> {
-    try {
-      const mysql = await import('mysql2/promise');
-      this.pool = mysql.createPool({
-        host: this.config.host,
-        port: this.config.port,
-        user: this.config.user,
-        password: this.config.password,
-        database: this.config.database,
-        waitForConnections: true,
-        connectionLimit: 5,
-      });
-
-      await this.pool.exec(`
-        CREATE TABLE IF NOT EXISTS \`${this.tableName}\` (
-          \`key\` VARCHAR(255) PRIMARY KEY,
-          value LONGTEXT NOT NULL
-        )
-      `);
-
-      const [rows] = await this.pool.query(`SELECT COUNT(*) as count FROM \`${this.tableName}\``) as any[];
-      log.debug(`Loaded ${rows[0].count} entries from MySQL (${this.tableName})`);
-    } catch (error) {
-      log.error(`Failed to initialize MySQL: ${error}`);
-      throw error;
-    }
-  }
-
-  async get<T = unknown>(key: string): Promise<T | null> {
-    const [rows] = await this.pool.query(`SELECT value FROM \`${this.tableName}\` WHERE \`key\` = ?`, [key]) as any[];
-    if (rows.length === 0) return null;
-    return JSON.parse(rows[0].value) as T;
-  }
-
-  async set<T = unknown>(key: string, value: T): Promise<void> {
-    await this.pool.query(
-      `INSERT INTO \`${this.tableName}\` (\`key\`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)`,
-      [key, JSON.stringify(value)],
-    );
-  }
-
-  async delete(key: string): Promise<boolean> {
-    const [result] = await this.pool.query(`DELETE FROM \`${this.tableName}\` WHERE \`key\` = ?`, [key]) as any[];
-    return result.affectedRows > 0;
-  }
-
-  async has(key: string): Promise<boolean> {
-    const [rows] = await this.pool.query(`SELECT 1 FROM \`${this.tableName}\` WHERE \`key\` = ?`, [key]) as any[];
-    return rows.length > 0;
-  }
-
-  async all<T = unknown>(): Promise<Map<string, T>> {
-    const [rows] = await this.pool.query(`SELECT \`key\`, value FROM \`${this.tableName}\``) as any[];
-    const map = new Map<string, T>();
-    for (const row of rows) {
-      map.set(row.key, JSON.parse(row.value) as T);
-    }
-    return map;
-  }
-
-  async clear(): Promise<void> {
-    await this.pool.query(`DELETE FROM \`${this.tableName}\``);
-  }
-
-  async close(): Promise<void> {
-    await this.pool?.end();
-    this.pool = null;
-  }
-}
-
 /**
  * Shared MySQL pool — all modules share one connection pool.
- * Created once, passed to all MysqlProvider instances.
+ * Created once during bootstrap, passed to every SharedMysqlProvider
+ * owned by a module.
  */
 export class SharedMysqlPool {
-  private pool: any = null;
+  private pool: Pool | null = null;
 
   constructor(private readonly config: MysqlConfig) {}
 
@@ -105,10 +30,13 @@ export class SharedMysqlPool {
       waitForConnections: true,
       connectionLimit: 5,
     });
-    LitLogger.debug('Storage:MySQL', 'Shared pool initialized');
+    log.debug('Shared pool initialized');
   }
 
-  getPool(): any {
+  getPool(): Pool {
+    if (!this.pool) {
+      throw new Error('MySQL pool not initialized. Call init() first.');
+    }
     return this.pool;
   }
 
@@ -118,12 +46,28 @@ export class SharedMysqlPool {
   }
 }
 
+type ValueRow = RowDataPacket & { value: string };
+type KeyValueRow = RowDataPacket & { key: string; value: string };
+type CountRow = RowDataPacket & { count: number };
+
+function assertValueRow(row: RowDataPacket | undefined): string | null {
+  if (!row || typeof (row as ValueRow).value !== 'string') return null;
+  return (row as ValueRow).value;
+}
+
 /**
- * MysqlProvider variant that uses a shared pool.
+ * MysqlProvider that uses the shared pool.
+ *
+ * One table per module: `<ModuleName>_store`.
+ *
+ * Uses `pool.query()` exclusively \u2014 mysql2/promise exposes only
+ * `query` and `execute`, NOT `exec`. (The prior implementation called
+ * the non-existent `pool.exec(...)`, crashing on first `init()`.)
  */
 export class SharedMysqlProvider implements StorageProvider {
   readonly driver = 'mysql' as const;
   private readonly tableName: string;
+  private initialized = false;
 
   constructor(
     private readonly pool: SharedMysqlPool,
@@ -133,42 +77,69 @@ export class SharedMysqlProvider implements StorageProvider {
   }
 
   async init(): Promise<void> {
+    if (this.initialized) return;
     const p = this.pool.getPool();
-    await p.exec(`
+    await p.query(`
       CREATE TABLE IF NOT EXISTS \`${this.tableName}\` (
         \`key\` VARCHAR(255) PRIMARY KEY,
         value LONGTEXT NOT NULL
       )
     `);
-    const [rows] = await p.query(`SELECT COUNT(*) as count FROM \`${this.tableName}\``) as any[];
-    LitLogger.debug('Storage:MySQL', `Loaded ${rows[0].count} entries (${this.tableName})`);
+    const [rows] = await p.query(
+      `SELECT COUNT(*) AS count FROM \`${this.tableName}\``,
+    ) as [CountRow[], unknown];
+    log.debug(`Initialized table ${this.tableName} (${rows[0]?.count ?? 0} rows)`);
+    this.initialized = true;
+  }
+
+  private requireReady(): void {
+    if (!this.initialized) {
+      throw new Error(`SharedMysqlProvider (${this.tableName}) not initialized; call init() first.`);
+    }
   }
 
   async get<T = unknown>(key: string): Promise<T | null> {
-    const [rows] = await this.pool.getPool().query(`SELECT value FROM \`${this.tableName}\` WHERE \`key\` = ?`, [key]) as any[];
-    if (rows.length === 0) return null;
-    return JSON.parse(rows[0].value) as T;
+    this.requireReady();
+    const [rows] = await this.pool.getPool().query(
+      `SELECT value FROM \`${this.tableName}\` WHERE \`key\` = ?`,
+      [key],
+    ) as [RowDataPacket[], unknown];
+    const value = assertValueRow(rows[0]);
+    return value === null ? null : (JSON.parse(value) as T);
   }
 
   async set<T = unknown>(key: string, value: T): Promise<void> {
+    this.requireReady();
     await this.pool.getPool().query(
-      `INSERT INTO \`${this.tableName}\` (\`key\`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)`,
+      `INSERT INTO \`${this.tableName}\` (\`key\`, value) VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE value = VALUES(value)`,
       [key, JSON.stringify(value)],
     );
   }
 
   async delete(key: string): Promise<boolean> {
-    const [result] = await this.pool.getPool().query(`DELETE FROM \`${this.tableName}\` WHERE \`key\` = ?`, [key]) as any[];
+    this.requireReady();
+    const [result] = await this.pool.getPool().query(
+      `DELETE FROM \`${this.tableName}\` WHERE \`key\` = ?`,
+      [key],
+    ) as [ResultSetHeader, unknown];
     return result.affectedRows > 0;
   }
 
   async has(key: string): Promise<boolean> {
-    const [rows] = await this.pool.getPool().query(`SELECT 1 FROM \`${this.tableName}\` WHERE \`key\` = ?`, [key]) as any[];
+    this.requireReady();
+    const [rows] = await this.pool.getPool().query(
+      `SELECT 1 AS present FROM \`${this.tableName}\` WHERE \`key\` = ?`,
+      [key],
+    ) as [RowDataPacket[], unknown];
     return rows.length > 0;
   }
 
   async all<T = unknown>(): Promise<Map<string, T>> {
-    const [rows] = await this.pool.getPool().query(`SELECT \`key\`, value FROM \`${this.tableName}\``) as any[];
+    this.requireReady();
+    const [rows] = await this.pool.getPool().query(
+      `SELECT \`key\`, value FROM \`${this.tableName}\``,
+    ) as [KeyValueRow[], unknown];
     const map = new Map<string, T>();
     for (const row of rows) {
       map.set(row.key, JSON.parse(row.value) as T);
@@ -177,10 +148,12 @@ export class SharedMysqlProvider implements StorageProvider {
   }
 
   async clear(): Promise<void> {
+    this.requireReady();
     await this.pool.getPool().query(`DELETE FROM \`${this.tableName}\``);
   }
 
   async close(): Promise<void> {
-    // Shared pool — don't close it, just clear the table reference
+    // Pool is shared across modules; do not `end()` it here.
+    this.initialized = false;
   }
 }
