@@ -1,6 +1,6 @@
 {
   "name": "biscotto",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "private": true,
   "description": "Modular Discord bot framework",
   "author": "Hydr46605 <https://github.com/Hydr46605>",
@@ -15,7 +15,16 @@
     "dev": "npm run dev --workspace=@biscotto/core",
     "build": "npm run build --workspaces",
     "start": "npm run start --workspace=@biscotto/core",
-    "typecheck": "npm run typecheck --workspaces"
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:core": "vitest run tests/core",
+    "test:cli": "vitest run tests/cli"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^3.2.6",
+    "vitest": "^3.2.6"
   },
   "license": "MIT"
 }
