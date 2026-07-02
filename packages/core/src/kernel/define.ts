@@ -370,6 +370,22 @@ export interface ModuleConfig {
   onUnload?(ctx: ModuleContext): Promise<void> | void;
 }
 
+/**
+ * Concrete lifecycle-hook shape used by `ModuleLifecycle`. Defined here
+ * (next to `ModuleConfig`) so module authors see the same typed shape that
+ * the runtime invokes.
+ */
+export interface LifecycleHooks {
+  /** Module loaded — initialize resources (DB, cache, etc.) */
+  onLoad?(ctx: ModuleContext): Promise<void> | void;
+  /** Module enabled — register commands/events */
+  onEnable?(ctx: ModuleContext): Promise<void> | void;
+  /** Module disabled — cleanup resources */
+  onDisable?(ctx: ModuleContext): Promise<void> | void;
+  /** Module unloaded — final cleanup */
+  onUnload?(ctx: ModuleContext): Promise<void> | void;
+}
+
 export function defineModule(config: ModuleConfig): BiscottoModuleWithIntents {
   return {
     manifest: config.manifest,

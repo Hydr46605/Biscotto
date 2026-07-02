@@ -14,7 +14,7 @@ import { LitLogger } from './logger.ts';
 import { ServiceRegistry } from './services.ts';
 import { ModuleLifecycle, ModuleState, type ModuleContext } from './lifecycle.ts';
 import { ModuleData } from './data.ts';
-import { StorageManager } from './storage/manager.ts';
+import { ModuleStorageManager } from './storage/manager.ts';
 import type { StorageProvider } from './storage/types.ts';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ export class ModuleLoader {
   private client: Client | null = null;
   private services = new ServiceRegistry();
   private lifecycle = new ModuleLifecycle();
-  private storageManager = new StorageManager();
+  private storageManager = new ModuleStorageManager();
   private root: string | null = null;
 
   // ── Public API ────────────────────────────────────────────────────────────
@@ -226,7 +226,7 @@ export class ModuleLoader {
     return this.lifecycle;
   }
 
-  getStorageManager(): StorageManager {
+  getStorageManager(): ModuleStorageManager {
     return this.storageManager;
   }
 

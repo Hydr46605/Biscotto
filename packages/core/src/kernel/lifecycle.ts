@@ -43,16 +43,11 @@ function createModuleLogger(moduleName: string): ModuleLogger {
 
 // ── Lifecycle Hooks ───────────────────────────────────────────────────────────
 
-export interface LifecycleHooks {
-  /** Module loaded — initialize resources (DB, cache, etc.) */
-  onLoad?(ctx: ModuleContext): Promise<void> | void;
-  /** Module enabled — register commands/events */
-  onEnable?(ctx: ModuleContext): Promise<void> | void;
-  /** Module disabled — cleanup resources */
-  onDisable?(ctx: ModuleContext): Promise<void> | void;
-  /** Module unloaded — final cleanup */
-  onUnload?(ctx: ModuleContext): Promise<void> | void;
-}
+// `LifecycleHooks` is defined in `define.ts` (next to `ModuleConfig`) so
+// that user-facing module definition and runtime API share one type.
+// Imported here as a type-only reference to avoid a runtime cycle.
+
+import type { LifecycleHooks } from './define.ts';
 
 // ── Lifecycle Manager ─────────────────────────────────────────────────────────
 
