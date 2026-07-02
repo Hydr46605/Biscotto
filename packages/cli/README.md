@@ -2,11 +2,18 @@
 
 CLI for managing Biscotto projects, modules, and bot processes ~ one biscuit at a time.
 
+> Published as ESM. Pairs with `@biscotto/core` (CommonJS) in your bot
+> project.
+
 ## Installation
 
 ```bash
 npm install -g @biscotto/cli
 ```
+
+## Version
+
+1.9.0
 
 ## Usage
 
@@ -19,7 +26,7 @@ biscotto <command> [options]
 | Command | Description |
 |---------|-------------|
 | `init <name>` | Initialize a new Biscotto project |
-| `create <name>` | Create a new module with stack selection |
+| `create <name> [--stack]` | Create a new module with optional stack selection |
 | `pack <module>` | Validate a module for publishing |
 | `publish <module>` | Publish a module to GitHub |
 | `dev` | Start bot with hot reload |
@@ -28,7 +35,7 @@ biscotto <command> [options]
 | `list` | List installed modules |
 | `enable <module>` | Enable a module |
 | `disable <module>` | Disable a module |
-| `reload <module>` | Reload a module |
+| `reload <module>` | Hot-reload a module in the running bot |
 | `config <module>` | View or edit module configuration |
 | `start` | Start bot in background process |
 | `stop` | Stop the bot process |
@@ -62,46 +69,4 @@ biscotto create my-module --stack full
 #   voice    - Commands + voice support
 #   storage  - Commands + storage integration
 #   moderate - Commands + buttons (moderation style)
-```
-
-## Module Management
-
-```bash
-# Enable/disable modules
-biscotto enable shop
-biscotto disable shop
-
-# Check module status
-biscotto status shop
-
-# View/edit module config
-biscotto config zero
-biscotto config zero prefix ?
-
-# Validate before publishing
-biscotto pack my-module
-
-# Publish to GitHub
-biscotto publish my-module
-```
-
-## Project Structure
-
-```
-my-bot/
-  .biscotto/
-    installed.json
-  src/
-    index.ts
-  modules/
-    zero/
-      manifest.ts
-      index.ts
-      commands/
-        ping.ts
-      listeners/
-        ready.ts
-  .env
-  package.json
-  tsconfig.json
 ```

@@ -7,3 +7,6 @@ logs/
 *.log
 .DS_Store
 Thumbs.db
+
+# Local end-to-end test workspace — never publish.
+tmp/

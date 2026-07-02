@@ -10,12 +10,17 @@
 
 <p align="center">
   <a href="https://github.com/Hydr46605/Biscotto/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License"></a>
-  <a href="https://github.com/Hydr46605/Biscotto"><img src="https://img.shields.io/badge/version-1.7.2-brightgreen" alt="Version"></a>
+  <a href="https://github.com/Hydr46605/Biscotto"><img src="https://img.shields.io/badge/version-1.9.0-brightgreen" alt="Version"></a>
 </p>
 
 ---
 
 A modular Discord bot framework with package management. Install modules from GitHub, manage processes, and build your dream bot ~ one biscuit at a time.
+
+> **Module system note:** `@biscotto/core` is published as CommonJS.
+> `@biscotto/cli` is published as ESM. They are consumed with a single
+> `npm install` in your bot project. Pure-ESM unification is planned for
+> v2.
 
 ## Quick Start
 
@@ -46,7 +51,7 @@ biscotto start
 
 ```bash
 # Install a module
-biscotto add Hydr46605/BiscottoTicket
+biscotto add Hydr46605/Biscotto
 
 # List installed
 biscotto list
@@ -56,6 +61,14 @@ biscotto start
 ```
 
 ## Creating a Module
+
+```bash
+# Commands only (default)
+biscotto create my-module
+
+# Choose a stack (simple|full|voice|storage|moderate)
+biscotto create my-module --stack full
+```
 
 ```typescript
 import { defineCommand, defineButton, defineModule } from '@biscotto/core';
@@ -107,6 +120,8 @@ export default defineModule({
 | `biscotto status` | Show bot status |
 | `biscotto update <name>` | Update a module |
 | `biscotto search <query>` | Search registry |
+| `biscotto create <name> [--stack]` | Create a new module with optional stack |
+| `biscotto reload <name>` | Hot-reload a module in a running bot |
 
 ## License
 

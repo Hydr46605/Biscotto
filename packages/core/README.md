@@ -2,6 +2,13 @@
 
 Bot framework with dynamic module loading, process management, and a plugin-based architecture ~ one biscuit at a time.
 
+> Published as CommonJS. Designed to be paired with `@biscotto/cli` (ESM)
+> in your bot project.
+
+## Version
+
+1.9.0
+
 ## Installation
 
 ```bash
@@ -17,7 +24,9 @@ import { run } from '@biscotto/core';
 run();
 ```
 
-The `run` function bootstraps the bot: loads modules from `.biscotto/modules/`, registers commands with Discord, and connects. Environment variables (`DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_GUILD_ID`) are read from `.env` via dotenv.
+`run()` bootstraps the bot: loads modules from `.biscotto/modules/`, registers commands with Discord, and connects. It only auto-fires when `@biscotto/core`'s entry file is the *program* entry point – importing the package for type-only or programmatic consumption does *not* launch the bot.
+
+Environment variables (`DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_GUILD_ID`) are read from `.env` via dotenv.
 
 ## Features
 
@@ -28,36 +37,6 @@ The `run` function bootstraps the bot: loads modules from `.biscotto/modules/`, 
 - Guild-specific command deployment
 - Modular storage (JSON, SQLite, YAML, MySQL)
 - `defineCommand`, `defineButton`, `defineSelectMenu`, `defineModal`, `defineAutocomplete`, `defineUserContextMenu`, `defineMessageContextMenu`, `defineEvent`, `defineModule` helpers
-- InteractionRouter with custom ID matching
+- `InteractionRouter` with custom ID matching
 - Declarative intents
-
-## Module Contract
-
-```typescript
-import { defineModule, defineCommand, defineButton } from '@biscotto/core';
-
-const hello = defineCommand({
-  name: 'hello',
-  description: 'Say hello',
-  async execute(ctx) {
-    await ctx.reply('Hello!');
-  },
-});
-
-const helloBtn = defineButton({
-  customId: 'hello-btn',
-  async execute(ctx) {
-    await ctx.reply('Button clicked!');
-  },
-});
-
-export default defineModule({
-  manifest: {
-    name: 'my-module',
-    version: '1.0.0',
-    author: { name: 'Your Name' },
-  },
-  commands: [hello],
-  buttons: [helloBtn],
-});
-```
+- In-process module hot-reload driven by `.biscotto/reload.json`
