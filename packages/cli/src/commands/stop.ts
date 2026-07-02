@@ -14,7 +14,7 @@ export const stopCommand: Command = {
     const pid = getPid(ctx.root);
     console.log(`  Stopping bot (PID: ${pid})...`);
 
-    const stopped = stopBot(ctx.root);
+    const stopped = await stopBot(ctx.root);
 
     if (stopped) {
       console.log('  Bot stopped.');

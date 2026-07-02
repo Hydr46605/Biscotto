@@ -35,9 +35,16 @@ function parseArgs(rest: string[]): { args: string[]; flags: string[]; options: 
   for (let i = 0; i < rest.length; i++) {
     const arg = rest[i];
     if (arg.startsWith('--')) {
-      const key = arg.slice(2);
+      // Support both `--stack full` and `--stack=full` so users can write
+      // either form. The trailing-value form requires the next token to
+      // not *itself* look like a flag.
+      const eq = arg.indexOf('=');
+      const key = eq === -1 ? arg.slice(2) : arg.slice(2, eq);
+      const inlineValue = eq === -1 ? undefined : arg.slice(eq + 1);
       const next = rest[i + 1];
-      if (next && !next.startsWith('--')) {
+      if (inlineValue !== undefined) {
+        options[key] = inlineValue;
+      } else if (next && !next.startsWith('--')) {
         options[key] = next;
         i++;
       } else {

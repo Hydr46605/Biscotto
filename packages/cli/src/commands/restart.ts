@@ -8,7 +8,7 @@ export const restartCommand: Command = {
   async run(ctx) {
     if (isRunning(ctx.root)) {
       console.log('  Stopping bot...');
-      stopBot(ctx.root);
+      await stopBot(ctx.root);
     }
 
     const entry = ctx.args[0] ?? 'src/index.ts';

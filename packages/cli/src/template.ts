@@ -103,9 +103,9 @@ export function copyTemplate(
 
       const rendered = hasTemplateSyntax(content) ? render(content, allVars) : content;
 
-      // Strip feature prefix from filename
+      // Strip the leading `+` feature-gate prefix only.
       const finalName = entry.name.startsWith('+')
-        ? entry.name.slice(2)
+        ? entry.name.slice(1)
         : entry.name;
 
       writeFileSync(join(dest, finalName), rendered, 'utf-8');
