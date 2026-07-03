@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'node:fs';
 import { resolve, join, relative } from 'node:path';
-import { LitLogger } from './logger.ts';
+import { LitLogger } from './logger.js';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -33,6 +33,7 @@ export class ModuleData {
   private readonly dir: string;
   private readonly name: string;
   private configCache: Record<string, unknown> | null = null;
+  private configCacheKey: string | null = null;
 
   constructor(root: string, moduleName: string) {
     this.name = moduleName;
@@ -56,13 +57,17 @@ export class ModuleData {
     schema: ConfigSchema,
     defaults: T,
   ): T {
-    if (this.configCache) return this.configCache as T;
+    const cacheKey = JSON.stringify({ schema, defaults });
+    if (this.configCache && this.configCacheKey === cacheKey) {
+      return this.configCache as T;
+    }
 
     const configPath = this.getConfigPath();
 
     if (!existsSync(configPath)) {
       this.saveConfig(defaults);
       this.configCache = defaults;
+      this.configCacheKey = cacheKey;
       LitLogger.debug('Data', `Created default config for ${this.name}`);
       return defaults;
     }
@@ -78,10 +83,12 @@ export class ModuleData {
       }
 
       this.configCache = merged;
+      this.configCacheKey = cacheKey;
       return merged as T;
     } catch (error) {
       LitLogger.error('Data', `Failed to load config for ${this.name}: ${error}`);
       this.configCache = defaults;
+      this.configCacheKey = cacheKey;
       return defaults;
     }
   }
@@ -90,6 +97,7 @@ export class ModuleData {
   saveConfig(config: Record<string, unknown>): void {
     writeFileSync(this.getConfigPath(), JSON.stringify(config, null, 2), 'utf-8');
     this.configCache = config;
+    this.configCacheKey = null;
   }
 
   /** Get a single config value. */
@@ -121,6 +129,7 @@ export class ModuleData {
     if (existsSync(path)) {
       unlinkSync(path);
       this.configCache = null;
+      this.configCacheKey = null;
       return true;
     }
     return false;
