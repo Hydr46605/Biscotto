@@ -139,7 +139,7 @@ export const publishCommand: Command = {
 
     // Registry
     if (withRegistry && manifest) {
-      addToRegistry(manifest, repoUrl || `https://github.com/Hydr46605/${manifest.name}`);
+      addToRegistry(manifest, repoUrl || `https://github.com/<your-username>/${manifest.name}`);
     }
 
     console.log('');
