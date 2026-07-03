@@ -1,7 +1,6 @@
 import { readdirSync, existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { Client } from 'discord.js';
 import type { BiscottoModule, ModuleManifest } from '../contracts/module.contract.js';
 import { loadManifest, ManifestError } from './validation.js';
 import { resolveDependencies, checkDependencies, checkServiceRequirements, DependencyError, type ResolvedModule } from './resolver.js';
