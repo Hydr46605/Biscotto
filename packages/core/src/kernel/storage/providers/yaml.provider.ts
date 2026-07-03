@@ -2,8 +2,8 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 import * as yaml from 'js-yaml';
-import type { StorageProvider } from '../types.ts';
-import { LitLogger } from '../../logger.ts';
+import type { StorageProvider } from '../types.js';
+import { LitLogger } from '../../logger.js';
 
 const log = LitLogger.child('Storage:YAML');
 

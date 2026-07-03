@@ -1,6 +1,6 @@
 import type Storage from 'better-sqlite3';
-import type { StorageProvider } from '../types.ts';
-import { LitLogger } from '../../logger.ts';
+import type { StorageProvider } from '../types.js';
+import { LitLogger } from '../../logger.js';
 
 const log = LitLogger.child('Storage:SQLite');
 

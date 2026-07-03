@@ -1,7 +1,7 @@
 import type { Interaction, GuildMember } from 'discord.js';
-import { CooldownManager } from './cooldown.ts';
-import { PermissionChecker } from './permissions.ts';
-import { LitLogger } from '../logger.ts';
+import { CooldownManager } from './cooldown.js';
+import { PermissionChecker } from './permissions.js';
+import { LitLogger } from '../logger.js';
 
 export interface MiddlewareConfig {
   cooldown?: number;

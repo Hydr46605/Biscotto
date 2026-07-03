@@ -1,4 +1,4 @@
-import { defineCommand } from '../../../kernel/define.ts';
+import { defineCommand } from '../../../kernel/define.js';
 
 export default defineCommand({
   name: 'ping',

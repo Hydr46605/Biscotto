@@ -6,7 +6,7 @@ import {
   ThumbnailBuilder,
   MessageFlags,
 } from 'discord.js';
-import { defineCommand } from '../../../kernel/define.ts';
+import { defineCommand } from '../../../kernel/define.js';
 
 const VERSION = '1.0.0';
 const DISCORDJS_VERSION = '14.26.4';

@@ -3,8 +3,8 @@ import type {
   ResultSetHeader,
   Pool,
 } from 'mysql2/promise';
-import type { StorageProvider, MysqlConfig } from '../types.ts';
-import { LitLogger } from '../../logger.ts';
+import type { StorageProvider, MysqlConfig } from '../types.js';
+import { LitLogger } from '../../logger.js';
 
 const log = LitLogger.child('Storage:MySQL');
 

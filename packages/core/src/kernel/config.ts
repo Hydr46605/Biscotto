@@ -1,7 +1,7 @@
 import { config as loadDotenv } from 'dotenv';
 import { resolve } from 'node:path';
-import { LitLogger } from './logger.ts';
-import type { MysqlConfig } from './storage/types.ts';
+import { LitLogger } from './logger.js';
+import type { MysqlConfig } from './storage/types.js';
 
 const envPath = resolve(process.cwd(), '.env');
 loadDotenv({ path: envPath });

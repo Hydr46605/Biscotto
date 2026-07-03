@@ -3,8 +3,8 @@ import { resolve } from 'node:path';
 import type {
   ModuleManifest,
   ModuleAuthor,
-} from '../contracts/module.contract.ts';
-import type { StorageDriver } from './storage/types.ts';
+} from '../contracts/module.contract.js';
+import type { StorageDriver } from './storage/types.js';
 
 // ── Errors ────────────────────────────────────────────────────────────────────
 
@@ -22,7 +22,7 @@ export class ManifestError extends Error {
 
 const NAME_RE = /^[a-z][a-z0-9-]*$/;
 const SEMVER_RE = /^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?$/;
-const SEMVER_RANGE_RE = /^(>=|<=|>|<|~|\^)?\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?$/;
+const SEMVER_RANGE_RE = /^(\*|(>=|<=|>|<|~|\^)?\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?)$/;
 const STORAGE_DRIVERS: StorageDriver[] = ['json', 'sqlite', 'yaml', 'mysql'];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

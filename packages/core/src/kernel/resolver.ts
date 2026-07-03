@@ -1,5 +1,5 @@
-import type { ModuleManifest } from '../contracts/module.contract.ts';
-import { LitLogger } from './logger.ts';
+import type { ModuleManifest } from '../contracts/module.contract.js';
+import { LitLogger } from './logger.js';
 
 // ── Errors ────────────────────────────────────────────────────────────────────
 

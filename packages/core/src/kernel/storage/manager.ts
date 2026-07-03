@@ -1,9 +1,9 @@
-import type { StorageProvider, StorageDriver, ModuleStorageConfig, MysqlConfig } from './types.ts';
-import { JsonProvider } from './providers/json.provider.ts';
-import { SqliteProvider } from './providers/sqlite.provider.ts';
-import { YamlProvider } from './providers/yaml.provider.ts';
-import { SharedMysqlPool, SharedMysqlProvider } from './providers/mysql.provider.ts';
-import { LitLogger } from '../logger.ts';
+import type { StorageProvider, StorageDriver, ModuleStorageConfig, MysqlConfig } from './types.js';
+import { JsonProvider } from './providers/json.provider.js';
+import { SqliteProvider } from './providers/sqlite.provider.js';
+import { YamlProvider } from './providers/yaml.provider.js';
+import { SharedMysqlPool, SharedMysqlProvider } from './providers/mysql.provider.js';
+import { LitLogger } from '../logger.js';
 import { resolve } from 'node:path';
 
 // ── Storage Manager ───────────────────────────────────────────────────────────

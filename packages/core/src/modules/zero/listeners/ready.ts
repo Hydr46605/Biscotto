@@ -1,6 +1,6 @@
 import { Events } from 'discord.js';
-import { defineEvent } from '../../../kernel/define.ts';
-import { LitLogger } from '../../../kernel/logger.ts';
+import { defineEvent } from '../../../kernel/define.js';
+import { LitLogger } from '../../../kernel/logger.js';
 
 export default defineEvent({
   event: Events.ClientReady,

@@ -1,4 +1,4 @@
-import type { ModuleManifest } from '../../contracts/module.contract.ts';
+import type { ModuleManifest } from '../../contracts/module.contract.js';
 
 export const manifest: ModuleManifest = {
   name: 'zero',
@@ -8,7 +8,7 @@ export const manifest: ModuleManifest = {
     name: 'Hydr46605',
     url: 'https://github.com/Hydr46605',
   },
-  entry: 'src/index.ts',
+  entry: 'src/index.js',
   license: 'MIT',
   tags: ['core', 'builtin'],
 };

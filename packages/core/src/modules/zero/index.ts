@@ -1,6 +1,6 @@
-import { defineModule } from '../../kernel/define.ts';
-import { manifest } from './manifest.ts';
-import { commands, events } from './registry.ts';
+import { defineModule } from '../../kernel/define.js';
+import { manifest } from './manifest.js';
+import { commands, events } from './registry.js';
 
 export const zeroModule = defineModule({
   manifest,

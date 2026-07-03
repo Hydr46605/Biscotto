@@ -26,8 +26,8 @@ import type {
   EventDefinition,
   ModuleManifest,
   BiscottoModuleWithIntents,
-} from '../contracts/module.contract.ts';
-import type { ModuleContext } from './lifecycle.ts';
+} from '../contracts/module.contract.js';
+import type { ModuleContext } from './lifecycle.js';
 
 // ── Shared Helpers ────────────────────────────────────────────────────────────
 

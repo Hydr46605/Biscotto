@@ -4,7 +4,7 @@ export type {
   BiscottoManifest,
   BiscottoModule,
   BiscottoModuleWithIntents,
-} from './module.contract.ts';
+} from './module.contract.js';
 
 export type {
   CommandDefinition,
@@ -16,4 +16,4 @@ export type {
   MessageContextMenuDefinition,
   EventDefinition,
   ModuleRegistration,
-} from './module.contract.ts';
+} from './module.contract.js';

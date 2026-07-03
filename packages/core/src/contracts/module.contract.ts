@@ -11,7 +11,7 @@ import type {
   MessageContextMenuCommandInteraction,
   GatewayIntentBits,
 } from 'discord.js';
-import type { StorageDriver } from '../kernel/storage/types.ts';
+import type { StorageDriver } from '../kernel/storage/types.js';
 
 // ── Module Manifest ───────────────────────────────────────────────────────────
 
