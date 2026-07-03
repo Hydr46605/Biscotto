@@ -21,7 +21,10 @@ export class PermissionChecker {
 
     for (const perm of permissions) {
       const flag = PermissionFlagsBits[perm as PermissionString];
-      if (flag === undefined) continue;
+      if (flag === undefined) {
+        missing.push(perm);
+        continue;
+      }
       if (!memberPerms.has(flag)) {
         missing.push(perm);
       }
