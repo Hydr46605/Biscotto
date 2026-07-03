@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, unlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { LitLogger } from './logger.ts';
-import type { ModuleLoader } from './loader.ts';
+import { pathToFileURL } from 'node:url';
+import { LitLogger } from './logger.js';
+import type { ModuleLoader } from './loader.js';
 
 interface ReloadSignal {
   module: string;
@@ -72,4 +73,15 @@ export function setupHotReload(loader: ModuleLoader, root: string): void {
 
   poller.unref();
   LitLogger.debug('HotReload', `Polling ${flagPath} every 500 ms`);
+}
+
+/**
+ * Import a module with a cache-busting query parameter so Node.js
+ * re-reads the file from disk instead of returning the cached copy.
+ * Returns the default export or a named export matching the module name.
+ */
+export async function importFresh(modulePath: string): Promise<Record<string, unknown>> {
+  const fileUrl = pathToFileURL(modulePath).href;
+  const cacheBusted = `${fileUrl}?t=${Date.now()}`;
+  return import(cacheBusted);
 }

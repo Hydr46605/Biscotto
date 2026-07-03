@@ -1,6 +1,7 @@
 import type { Client, GatewayIntentBits } from 'discord.js';
 import type {
   BiscottoModule,
+  ModuleManifest,
   CommandDefinition,
   ButtonDefinition,
   SelectMenuDefinition,
@@ -9,13 +10,15 @@ import type {
   UserContextMenuDefinition,
   MessageContextMenuDefinition,
   EventDefinition,
-} from '../contracts/module.contract.ts';
-import { LitLogger } from './logger.ts';
-import { ServiceRegistry } from './services.ts';
-import { ModuleLifecycle, ModuleState, type ModuleContext } from './lifecycle.ts';
-import { ModuleData } from './data.ts';
-import { ModuleStorageManager } from './storage/manager.ts';
-import type { StorageProvider } from './storage/types.ts';
+} from '../contracts/module.contract.js';
+import { LitLogger } from './logger.js';
+import { ServiceRegistry } from './services.js';
+import { ModuleLifecycle, ModuleState, type ModuleContext } from './lifecycle.js';
+import { ModuleData } from './data.js';
+import { ModuleStorageManager } from './storage/manager.js';
+import type { StorageProvider } from './storage/types.js';
+import { importFresh } from './hotreload.js';
+import { resolve } from 'node:path';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -46,8 +49,32 @@ export class ModuleLoader {
 
   // ── Public API ────────────────────────────────────────────────────────────
 
-  async loadAll(modules: ModuleLike[], client?: Client, root?: string): Promise<void> {
-    if (client) this.client = client;
+  /**
+   * Extract gateway intents from modules without loading them.
+   * Used during bootstrap to create the client before lifecycle transitions.
+   */
+  getIntentsFromModules(modules: ModuleLike[]): GatewayIntentBits[] {
+    const seen = new Set<GatewayIntentBits>();
+    for (const mod of modules) {
+      const intents = mod.intents ?? [];
+      for (const intent of intents) {
+        seen.add(intent);
+      }
+    }
+    return [...seen];
+  }
+
+  /**
+   * Set the client and services on the lifecycle system.
+   * Must be called before loadAll to ensure hooks have access to the client.
+   */
+  initLifecycle(client: Client): void {
+    this.client = client;
+    this.lifecycle.setClient(client);
+    this.lifecycle.setServices(this.services);
+  }
+
+  async loadAll(modules: ModuleLike[], root?: string): Promise<void> {
     if (root) this.root = root;
 
     LitLogger.info('Loader', `Discovering ${modules.length} module(s)...`);
@@ -120,9 +147,7 @@ export class ModuleLoader {
   }
 
   async initAll(client: Client): Promise<void> {
-    this.client = client;
-    this.lifecycle.setClient(client);
-    this.lifecycle.setServices(this.services);
+    this.initLifecycle(client);
 
     for (const mod of this.loaded) {
       if (mod.state !== ModuleState.ENABLED) continue;
@@ -201,6 +226,35 @@ export class ModuleLoader {
   async reloadModule(name: string): Promise<boolean> {
     const disabled = await this.disableModule(name);
     if (!disabled) return false;
+
+    // Re-import the module from disk with cache-busting
+    const mod = this.loaded.find((m) => m.instance.manifest.name === name);
+    if (mod && this.root) {
+      const moduleDir = resolve(this.root, '.biscotto', 'modules', name);
+      const entry = mod.instance.manifest.entry ?? 'dist/index.js';
+      const modulePath = resolve(moduleDir, entry);
+      try {
+        const imported = await importFresh(modulePath);
+        const newMod =
+          (imported.default ?? imported[`${name}Module`] ?? imported.module) as BiscottoModule | undefined;
+        if (newMod) {
+          mod.instance = newMod as BiscottoModule & { intents?: GatewayIntentBits[] };
+          const registration = newMod.register();
+          mod.commands = registration.commands ?? [];
+          mod.buttons = registration.buttons ?? [];
+          mod.selectMenus = registration.selectMenus ?? [];
+          mod.modals = registration.modals ?? [];
+          mod.autocompletes = registration.autocompletes ?? [];
+          mod.userContextMenus = registration.userContextMenus ?? [];
+          mod.messageContextMenus = registration.messageContextMenus ?? [];
+          mod.events = registration.events ?? [];
+          LitLogger.info('Loader', `Re-imported code for module: ${name}`);
+        }
+      } catch (error) {
+        LitLogger.error('Loader', `Failed to re-import ${name}: ${error}`);
+      }
+    }
+
     return this.enableModule(name);
   }
 
@@ -374,6 +428,3 @@ export class ModuleLoader {
     LitLogger.info('Loader', `Loaded ${this.loaded.length} module(s) — ${total} interaction(s)`);
   }
 }
-
-// Re-export types for external use
-import type { ModuleManifest } from '../contracts/module.contract.ts';
