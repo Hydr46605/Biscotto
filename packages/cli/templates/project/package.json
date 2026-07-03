@@ -10,7 +10,7 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
-    "@biscotto/core": "^1.8.0",
+    "@biscotto/core": "^2.0.0",
     "dotenv": "^17.4.2"
   },
   "devDependencies": {
