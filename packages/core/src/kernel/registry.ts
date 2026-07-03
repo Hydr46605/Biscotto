@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
-import { LitLogger } from './logger.ts';
+import { LitLogger } from './logger.js';
 
 // ── Types (canonical) ─────────────────────────────────────────────────────────
 

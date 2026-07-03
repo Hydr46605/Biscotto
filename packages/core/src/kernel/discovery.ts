@@ -2,10 +2,11 @@ import { readdirSync, existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { Client } from 'discord.js';
-import type { BiscottoModule, ModuleManifest } from '../contracts/module.contract.ts';
-import { loadManifest, ManifestError } from './validation.ts';
-import { resolveDependencies, checkDependencies, checkServiceRequirements, DependencyError, type ResolvedModule } from './resolver.ts';
-import { LitLogger } from './logger.ts';
+import type { BiscottoModule, ModuleManifest } from '../contracts/module.contract.js';
+import { loadManifest, ManifestError } from './validation.js';
+import { resolveDependencies, checkDependencies, checkServiceRequirements, DependencyError, type ResolvedModule } from './resolver.js';
+import { LitLogger } from './logger.js';
+import type { InstalledFile } from './registry.js';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -20,11 +21,6 @@ export interface LoadError {
 }
 
 // ── Installed File ────────────────────────────────────────────────────────────
-
-interface InstalledFile {
-  version: number;
-  modules: Record<string, { enabled?: boolean }>;
-}
 
 function readInstalledFile(root: string): InstalledFile {
   const file = resolve(root, '.biscotto', 'installed.json');
@@ -43,8 +39,6 @@ function isModuleEnabled(installed: InstalledFile, name: string): boolean {
 }
 
 // ── Dynamic Loader ────────────────────────────────────────────────────────────
-
-const BUILTIN_NAMES = new Set(['zero']);
 
 /**
  * Discover and load all modules from a directory.
@@ -99,6 +93,7 @@ export function discoverModules(modulesDir: string): ResolvedModule[] {
 export async function loadFromDisk(
   modulesDir: string,
   builtinModules: BiscottoModule[],
+  root: string,
 ): Promise<LoadResult> {
   const discovered = discoverModules(modulesDir);
 
@@ -107,8 +102,9 @@ export async function loadFromDisk(
     return { modules: [], errors: [] };
   }
 
+  const builtinNames = new Set(builtinModules.map((m) => m.manifest.name));
+
   // Read installed.json to check enabled status
-  const root = resolve(modulesDir, '..', '..');
   const installed = readInstalledFile(root);
 
   // Filter out disabled modules
@@ -135,7 +131,7 @@ export async function loadFromDisk(
   const errors: LoadError[] = [];
 
   for (const mod of enabledModules) {
-    const missing = checkDependencies(mod.manifest, available, BUILTIN_NAMES);
+    const missing = checkDependencies(mod.manifest, available, builtinNames);
     if (missing.length > 0) {
       const msg = `Missing dependencies: ${missing.join(', ')}`;
       errors.push({ name: mod.manifest.name, error: msg });
@@ -148,7 +144,7 @@ export async function loadFromDisk(
   // Topological sort
   let ordered: ResolvedModule[];
   try {
-    ordered = resolveDependencies(validModules, BUILTIN_NAMES);
+    ordered = resolveDependencies(validModules, builtinNames);
   } catch (error) {
     if (error instanceof DependencyError) {
       LitLogger.error('DynLoader', `Dependency resolution failed: ${error.message}`);
@@ -158,7 +154,7 @@ export async function loadFromDisk(
   }
 
   // Check service requirements (requires/provides)
-  const serviceIssues = checkServiceRequirements(ordered, BUILTIN_NAMES);
+  const serviceIssues = checkServiceRequirements(ordered, builtinNames);
   for (const issue of serviceIssues) {
     const msg = `Missing services: ${issue.missing.join(', ')}`;
     LitLogger.warn('DynLoader', `${issue.module}: ${msg}`);
