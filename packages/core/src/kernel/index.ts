@@ -1,11 +1,11 @@
-export { config } from './config.ts';
-export { createClient } from './client.ts';
-export { LitLogger } from './logger.ts';
-export { ModuleLoader } from './loader.ts';
-export { CommandRegistrar } from './registrar.ts';
-export { InteractionRouter } from './router.ts';
-export { setupHotReload } from './hotreload.ts';
-export { validateManifest, loadManifest, ManifestError } from './validation.ts';
+export { config } from './config.js';
+export { createClient } from './client.js';
+export { LitLogger } from './logger.js';
+export { ModuleLoader } from './loader.js';
+export { CommandRegistrar } from './registrar.js';
+export { InteractionRouter } from './router.js';
+export { setupHotReload } from './hotreload.js';
+export { validateManifest, loadManifest, ManifestError } from './validation.js';
 
 export {
   resolveDependencies,
@@ -14,15 +14,15 @@ export {
   buildDependencyGraph,
   checkServiceRequirements,
   DependencyError,
-} from './resolver.ts';
+} from './resolver.js';
 
-export { loadFromDisk, discoverModules } from './discovery.ts';
-export { CooldownManager } from './middleware/cooldown.ts';
-export { PermissionChecker } from './middleware/permissions.ts';
-export { MiddlewarePipeline } from './middleware/pipeline.ts';
-export { ServiceRegistry } from './services.ts';
-export { ModuleLifecycle, ModuleState } from './lifecycle.ts';
-export { ModuleData, defineConfig } from './data.ts';
+export { loadFromDisk, discoverModules } from './discovery.js';
+export { CooldownManager } from './middleware/cooldown.js';
+export { PermissionChecker } from './middleware/permissions.js';
+export { MiddlewarePipeline } from './middleware/pipeline.js';
+export { ServiceRegistry } from './services.js';
+export { ModuleLifecycle, ModuleState } from './lifecycle.js';
+export { ModuleData, defineConfig } from './data.js';
 
 export {
   defineCommand,
@@ -34,7 +34,7 @@ export {
   defineMessageContextMenu,
   defineEvent,
   defineModule,
-} from './define.ts';
+} from './define.js';
 
 export type {
   CommandContext,
@@ -54,14 +54,14 @@ export type {
   EventConfig,
   ModuleConfig,
   LifecycleHooks,
-} from './define.ts';
+} from './define.js';
 
-export type { InstalledModule, InstalledFile } from './registry.ts';
-export type { ResolvedModule } from './resolver.ts';
-export type { LoadResult, LoadError } from './discovery.ts';
-export type { StorageProvider, StorageDriver, MysqlConfig } from './storage/types.ts';
-export type { MiddlewareConfig, MiddlewareResult } from './middleware/pipeline.ts';
-export type { PermissionString } from './middleware/permissions.ts';
-export type { ServiceInfo } from './services.ts';
-export type { ModuleContext } from './lifecycle.ts';
-export type { ConfigSchema, ConfigField, ModuleConfig as ModuleConfigType } from './data.ts';
+export type { InstalledModule, InstalledFile } from './registry.js';
+export type { ResolvedModule } from './resolver.js';
+export type { LoadResult, LoadError } from './discovery.js';
+export type { StorageProvider, StorageDriver, MysqlConfig } from './storage/types.js';
+export type { MiddlewareConfig, MiddlewareResult } from './middleware/pipeline.js';
+export type { PermissionString } from './middleware/permissions.js';
+export type { ServiceInfo } from './services.js';
+export type { ModuleContext } from './lifecycle.js';
+export type { ConfigSchema, ConfigField, ModuleConfig as ModuleConfigType } from './data.js';

@@ -1,8 +1,8 @@
 import type { Client } from 'discord.js';
-import { LitLogger } from './logger.ts';
-import type { ServiceRegistry } from './services.ts';
-import type { ModuleData } from './data.ts';
-import type { StorageProvider } from './storage/types.ts';
+import { LitLogger } from './logger.js';
+import type { ServiceRegistry } from './services.js';
+import type { ModuleData } from './data.js';
+import type { StorageProvider } from './storage/types.js';
 
 // ── Module State ──────────────────────────────────────────────────────────────
 
@@ -47,7 +47,7 @@ function createModuleLogger(moduleName: string): ModuleLogger {
 // that user-facing module definition and runtime API share one type.
 // Imported here as a type-only reference to avoid a runtime cycle.
 
-import type { LifecycleHooks } from './define.ts';
+import type { LifecycleHooks } from './define.js';
 
 // ── Lifecycle Manager ─────────────────────────────────────────────────────────
 

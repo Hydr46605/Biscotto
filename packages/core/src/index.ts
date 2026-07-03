@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import {
   createClient,
   config,
@@ -6,10 +7,10 @@ import {
   ModuleLoader,
   CommandRegistrar,
   InteractionRouter,
-} from './kernel/index.ts';
-import { loadFromDisk } from './kernel/discovery.ts';
-import { modules as builtinModules } from './modules/index.ts';
-import { setupHotReload } from './kernel/hotreload.ts';
+} from './kernel/index.js';
+import { loadFromDisk } from './kernel/discovery.js';
+import { modules as builtinModules } from './modules/index.js';
+import { setupHotReload } from './kernel/hotreload.js';
 
 // Re-export API helpers for module authors
 export {
@@ -22,7 +23,7 @@ export {
   defineMessageContextMenu,
   defineEvent,
   defineModule,
-} from './kernel/define.ts';
+} from './kernel/define.js';
 
 export type {
   CommandContext,
@@ -41,18 +42,18 @@ export type {
   MessageContextMenuConfig,
   EventConfig,
   ModuleConfig,
-} from './kernel/define.ts';
+} from './kernel/define.js';
 
-export type { ModuleManifest, BiscottoModule } from './contracts/module.contract.ts';
-export type { LifecycleHooks } from './kernel/define.ts';
-export { ServiceRegistry } from './kernel/services.ts';
-export type { ServiceInfo } from './kernel/services.ts';
-export { ModuleLifecycle, ModuleState } from './kernel/lifecycle.ts';
-export type { ModuleContext } from './kernel/lifecycle.ts';
-export { ModuleData, defineConfig } from './kernel/data.ts';
-export type { ConfigSchema, ConfigField } from './kernel/data.ts';
-export type { StorageProvider, StorageDriver } from './kernel/storage/types.ts';
-export type { MysqlConfig } from './kernel/storage/types.ts';
+export type { ModuleManifest, BiscottoModule } from './contracts/module.contract.js';
+export type { LifecycleHooks } from './kernel/define.js';
+export { ServiceRegistry } from './kernel/services.js';
+export type { ServiceInfo } from './kernel/services.js';
+export { ModuleLifecycle, ModuleState } from './kernel/lifecycle.js';
+export type { ModuleContext } from './kernel/lifecycle.js';
+export { ModuleData, defineConfig } from './kernel/data.js';
+export type { ConfigSchema, ConfigField } from './kernel/data.js';
+export type { StorageProvider, StorageDriver } from './kernel/storage/types.js';
+export type { MysqlConfig } from './kernel/storage/types.js';
 
 /**
  * Bootstraps a Biscotto bot: reads env, loads modules (builtin + installed),
@@ -66,8 +67,10 @@ export type { MysqlConfig } from './kernel/storage/types.ts';
  *   run();
  *
  * `run()` is invoked automatically only when this file is the program
- * entry point (`require.main === module`). Importing `@biscotto/core`
- * for type-only or programmatic reasons will NOT trigger a bot launch.
+ * entry point (matched via `import.meta.url === pathToFileURL(process.argv[1]).href`,
+ * the ESM-native equivalent of the CJS `require.main === module` idiom).
+ * Importing `@biscotto/core` for type-only or programmatic reasons will
+ * NOT trigger a bot launch.
  */
 export async function run(): Promise<void> {
   LitLogger.banner();
@@ -82,31 +85,35 @@ export async function run(): Promise<void> {
     await LitLogger.measure('Storage', 'MySQL pool', () => loader.initMysql(config.mysql!));
   }
 
-  // Load all modules (collects commands, events, intents without client)
-  await LitLogger.measure('Bootstrap', 'Builtin modules', () => loader.loadAll(builtinModules, undefined, root));
-
+  // Discover external modules from disk
   const modulesDir = resolve(root, '.biscotto', 'modules');
-  const { modules: externalModules, errors } = await loadFromDisk(modulesDir, builtinModules);
+  const { modules: externalModules, errors } = await loadFromDisk(modulesDir, builtinModules, root);
 
   if (errors.length > 0) {
     LitLogger.warn('Bootstrap', `${errors.length} module(s) failed to load`);
   }
 
-  if (externalModules.length > 0) {
-    await LitLogger.measure('Bootstrap', 'External modules', () => loader.loadAll(externalModules, undefined, root));
-  }
-
-  // Per-module data and storage
+  // Collect all modules and setup data/storage BEFORE loading
+  // (lifecycle hooks need data + storage to be available)
   const allModules = [...builtinModules, ...externalModules];
   for (const mod of allModules) {
     await loader.setupModuleData(mod);
   }
 
-  // Merge intents from all modules and create the real client
-  const extraIntents = loader.getIntents();
+  // Extract intents from modules and create the Discord client
+  const extraIntents = loader.getIntentsFromModules(allModules);
   const client = createClient(extraIntents);
 
-  // Initialize all modules with the real client
+  // Initialize lifecycle with client so hooks can access it
+  loader.initLifecycle(client);
+
+  // Load all modules — lifecycle transitions now have data, storage, and client
+  await LitLogger.measure('Bootstrap', 'Builtin modules', () => loader.loadAll(builtinModules, root));
+  if (externalModules.length > 0) {
+    await LitLogger.measure('Bootstrap', 'External modules', () => loader.loadAll(externalModules, root));
+  }
+
+  // Initialize all modules with the real client (runs onInit hooks)
   await LitLogger.measure('Bootstrap', 'Module init', () => loader.initAll(client));
 
   // Register commands with Discord API
@@ -172,8 +179,14 @@ export async function run(): Promise<void> {
  * Auto-launch guard. Wrapped so importing the package for type-only or
  * programmatic reasons (e.g. Vitest, programmatic embedders) does NOT
  * immediately start the Discord client.
+ *
+ * ESM doesn't expose `require.main` / `module` the way CJS does. The
+ * canonical replacement is to compare `import.meta.url` (the URL of this
+ * file when imported) against `pathToFileURL(process.argv[1])` (the URL
+ * of whatever script the user invoked). A match means this file IS the
+ * program entry point, so the auto-launch should fire.
  */
-if (require.main === module) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   run().catch((error) => {
     LitLogger.error('Fatal', `Failed to start: ${error}`);
     process.exit(1);
