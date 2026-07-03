@@ -96,6 +96,7 @@ export async function run(): Promise<void> {
   // Collect all modules and setup data/storage BEFORE loading
   // (lifecycle hooks need data + storage to be available)
   const allModules = [...builtinModules, ...externalModules];
+  loader.setRoot(root);
   for (const mod of allModules) {
     await loader.setupModuleData(mod);
   }

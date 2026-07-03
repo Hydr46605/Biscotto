@@ -74,6 +74,13 @@ export class ModuleLoader {
     this.lifecycle.setServices(this.services);
   }
 
+  /**
+   * Set the project root directory. Must be called before setupModuleData.
+   */
+  setRoot(root: string): void {
+    this.root = root;
+  }
+
   async loadAll(modules: ModuleLike[], root?: string): Promise<void> {
     if (root) this.root = root;
 
