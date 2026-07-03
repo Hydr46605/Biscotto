@@ -66,4 +66,16 @@ export class CooldownManager {
   clearAll(): void {
     this.cooldowns.clear();
   }
+
+  /**
+   * Remove all expired cooldown entries. Call periodically to prevent memory leaks.
+   */
+  cleanup(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.cooldowns) {
+      if (now >= entry.expiresAt) {
+        this.cooldowns.delete(key);
+      }
+    }
+  }
 }
