@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g. 1.8.0)'
+        description: 'Version (e.g. 2.0.0)'
         required: true
         type: string
       dry-run:
@@ -49,6 +49,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Test
+        run: npm run test:run
+
       - name: Resolve version
         id: version
         run: |
@@ -76,9 +79,9 @@ jobs:
             COMPARE_FROM=$LAST_TAG
           fi
 
-          FEATURES=$(echo "$COMMITS" | grep -iE "^[^-]*feat" || true)
-          FIXES=$(echo "$COMMITS" | grep -iE "^[^-]*fix" || true)
-          OTHER=$(echo "$COMMITS" | grep -ivE "^[^-]*feat|^[^-]*fix|^[^-]*BREAKING" || true)
+          FEATURES=$(echo "$COMMITS" | grep -iE "^[^a-z]*feat" || true)
+          FIXES=$(echo "$COMMITS" | grep -iE "^[^a-z]*fix" || true)
+          OTHER=$(echo "$COMMITS" | grep -ivE "^[^a-z]*(feat|fix|BREAKING)" || true)
 
           {
             echo "## What's Changed"

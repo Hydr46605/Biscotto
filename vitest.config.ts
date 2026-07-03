@@ -4,8 +4,8 @@ import { resolve } from 'node:path';
 /**
  * Root Vitest configuration.
  *
- * Biscotto is a mixed monorepo:
- *   packages/core  -> CommonJS
+ * Biscotto is a fully ESM monorepo:
+ *   packages/core  -> ESM
  *   packages/cli   -> ESM
  *
  * We define projects per package so each side is transformed with the
