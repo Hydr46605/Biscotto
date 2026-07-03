@@ -10,17 +10,14 @@
 
 <p align="center">
   <a href="https://github.com/Hydr46605/Biscotto/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License"></a>
-  <a href="https://github.com/Hydr46605/Biscotto"><img src="https://img.shields.io/badge/version-1.9.0-brightgreen" alt="Version"></a>
+  <a href="https://github.com/Hydr46605/Biscotto"><img src="https://img.shields.io/badge/version-2.0.0-brightgreen" alt="Version"></a>
 </p>
 
 ---
 
 A modular Discord bot framework with package management. Install modules from GitHub, manage processes, and build your dream bot ~ one biscuit at a time.
 
-> **Module system note:** `@biscotto/core` is published as CommonJS.
-> `@biscotto/cli` is published as ESM. They are consumed with a single
-> `npm install` in your bot project. Pure-ESM unification is planned for
-> v2.
+> **Heads up:** v2.0.0 is ESM-only. If you're upgrading from v1.x, check the [Migration Guide](./docs/migration.md).
 
 ## Quick Start
 
@@ -38,6 +35,7 @@ biscotto start
 - **[Getting Started](docs/getting-started.md)** ~ setup, first module, commands, events
 - **[Module Storage](docs/module-storage.md)** ~ per-module isolated storage and data
 - **[Module Config](docs/module-config.md)** ~ typed configuration with schema
+- **[Module Ecosystem](docs/module-ecosystem.md)** ~ dependencies, services, lifecycle
 - **[Core API](packages/core/README.md)** ~ framework internals
 
 ## Packages
@@ -50,24 +48,16 @@ biscotto start
 ## Module System
 
 ```bash
-# Install a module
-biscotto add Hydr46605/Biscotto
-
-# List installed
-biscotto list
-
-# Start the bot
-biscotto start
+biscotto add Hydr46605/Biscotto   # install a module
+biscotto list                      # list installed
+biscotto start                     # start the bot
 ```
 
 ## Creating a Module
 
 ```bash
-# Commands only (default)
-biscotto create my-module
-
-# Choose a stack (simple|full|voice|storage|moderate)
-biscotto create my-module --stack full
+biscotto create my-module              # commands only (default)
+biscotto create my-module --stack full # full stack (buttons, modals, selects)
 ```
 
 ```typescript
@@ -107,21 +97,21 @@ export default defineModule({
 | Command | Description |
 |---------|-------------|
 | `biscotto init` | Initialize a new project |
-| `biscotto dev` | Start bot with hot reload |
-| `biscotto add <source>` | Install a module |
+| `biscotto create <name> [--stack]` | Create a new module |
+| `biscotto add <source>` | Install a module from GitHub |
 | `biscotto remove <name>` | Uninstall a module |
 | `biscotto list` | List installed modules |
-| `biscotto enable <name>` | Enable a module |
-| `biscotto disable <name>` | Disable a module |
-| `biscotto config <module>` | View/edit module config |
+| `biscotto dev` | Start bot with hot reload |
 | `biscotto start` | Start bot in background |
 | `biscotto stop` | Stop the bot |
 | `biscotto restart` | Restart the bot |
 | `biscotto status` | Show bot status |
+| `biscotto enable <name>` | Enable a module |
+| `biscotto disable <name>` | Disable a module |
+| `biscotto reload <name>` | Hot-reload a running module |
+| `biscotto config <module>` | View/edit module config |
 | `biscotto update <name>` | Update a module |
 | `biscotto search <query>` | Search registry |
-| `biscotto create <name> [--stack]` | Create a new module with optional stack |
-| `biscotto reload <name>` | Hot-reload a module in a running bot |
 
 ## License
 

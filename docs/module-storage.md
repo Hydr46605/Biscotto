@@ -1,6 +1,6 @@
 # Module Storage & Data
 
-Each Biscotto module gets its own isolated data directory where it can store configuration, databases, images, and any other files.
+Each module gets its own isolated data directory for configuration, databases, images, and any other files.
 
 ## Directory Structure
 
@@ -8,17 +8,15 @@ Each Biscotto module gets its own isolated data directory where it can store con
 .biscotto/
   configs/
     Shop/
-      config.json         # Structured config (schema + defaults)
-      logo.png            # Free files (images, cards, data, etc.)
+      config.json         # structured config (schema + defaults)
+      logo.png            # free files (images, cards, data, etc.)
     Moderation/
-      config.json
-    Economia/
       config.json
   data/
     Shop/
-      store.json          # Key-value storage (json driver)
+      store.json          # key-value storage (json driver)
     Economia/
-      store.db            # SQLite database (sqlite driver)
+      store.db            # sqlite database
   modules/
     shop/
       biscotto.json
@@ -26,11 +24,11 @@ Each Biscotto module gets its own isolated data directory where it can store con
         index.js
 ```
 
-## Per-Module Data Directory
+## Data Directory
 
-Every module receives a `ModuleData` instance via `ctx.data` in lifecycle hooks. This provides:
+Every module receives a `ModuleData` instance via `ctx.data` in lifecycle hooks.
 
-### Structured Config (JSON)
+### Structured Config
 
 ```typescript
 import { defineModule, defineConfig } from '@biscotto/core';
@@ -47,15 +45,12 @@ const config = defineConfig({
 export default defineModule({
   manifest,
   onLoad(ctx) {
-    // Load config with schema validation and defaults
     const cfg = ctx.data.loadConfig(config.schema, config.defaults);
     ctx.logger.info(`Tax rate: ${cfg.taxRate}`);
 
-    // Get/set individual values
     const rate = ctx.data.getConfig<number>('taxRate');
     ctx.data.setConfig('taxRate', 0.15);
 
-    // List all config keys
     const keys = ctx.data.configKeys();
   },
 });
@@ -69,31 +64,25 @@ Store any files — images, cards, data files, databases:
 export default defineModule({
   manifest,
   onLoad(ctx) {
-    // Write files
     ctx.data.writeFile('logo.png', imageBuffer);
     ctx.data.writeFile('data.json', JSON.stringify({ items: [] }));
 
-    // Read files
     const image = ctx.data.readBuffer('logo.png');
     const text = ctx.data.readFile('data.json');
 
-    // Check if file exists
     if (ctx.data.fileExists('logo.png')) {
       // ...
     }
 
-    // List all files
     const files = ctx.data.listFiles();
-
-    // Delete files
     ctx.data.deleteFile('old-file.txt');
   },
 });
 ```
 
-## Per-Module Isolated Storage
+## Isolated Storage
 
-Each module can declare its own storage driver in the manifest. Storage is fully isolated — each module gets its own file/database/table.
+Each module declares its own storage driver in the manifest. Storage is fully isolated — each module gets its own file, database, or table.
 
 ### Declaring Storage
 
@@ -101,14 +90,14 @@ Each module can declare its own storage driver in the manifest. Storage is fully
 export const manifest: ModuleManifest = {
   name: 'Shop',
   version: '1.0.0',
-  storage: { driver: 'sqlite' },  // Each module chooses its own driver
+  storage: { driver: 'sqlite' },
 };
 ```
 
 ### Available Drivers
 
-| Driver | Storage Location | Best For |
-|--------|-----------------|----------|
+| Driver | Location | Best For |
+|--------|----------|----------|
 | `json` | `.biscotto/data/<Module>/store.json` | Simple key-value, small data |
 | `sqlite` | `.biscotto/data/<Module>/store.db` | Structured data, queries |
 | `yaml` | `.biscotto/data/<Module>/store.yaml` | Human-readable config |
@@ -118,18 +107,14 @@ export const manifest: ModuleManifest = {
 
 ```typescript
 export default defineModule({
-  manifest,  // { storage: { driver: 'sqlite' } }
+  manifest,
   onLoad(ctx) {
-    // ctx.storage is a fully isolated StorageProvider
     await ctx.storage.set('user:123', { name: 'Mario', coins: 100 });
     const user = await ctx.storage.get<{ name: string; coins: number }>('user:123');
     const exists = await ctx.storage.has('user:123');
     await ctx.storage.delete('user:123');
 
-    // Get all entries
     const all = await ctx.storage.all();
-
-    // Clear all data
     await ctx.storage.clear();
   },
 });
@@ -144,7 +129,6 @@ Modules can expose their storage via the service registry:
 export default defineModule({
   manifest: { name: 'Economia', storage: { driver: 'sqlite' }, provides: ['economia-db'] },
   onLoad(ctx) {
-    // Expose this module's storage to others
     ctx.services.provide('economia-db', ctx.storage, 'Economia');
   },
 });
@@ -154,7 +138,6 @@ export default defineModule({
   manifest: { name: 'Shop', storage: { driver: 'sqlite' }, requires: ['economia-db'] },
   onLoad(ctx) {
     const econDB = ctx.services.require<StorageProvider>('economia-db');
-    // Use the Economia module's database
     const balance = await econDB.get<number>('user:123:coins');
   },
 });
@@ -162,7 +145,7 @@ export default defineModule({
 
 ## MySQL — Shared Pool
 
-When multiple modules use MySQL, they share a single connection pool (configured via `.env`):
+When multiple modules use MySQL, they share a single connection pool:
 
 ```env
 MYSQL_HOST=127.0.0.1
@@ -176,20 +159,13 @@ Each module gets its own table: `<ModuleName>_store`. No conflicts, no extra con
 
 ## CLI Commands
 
-### View Config
-
 ```bash
-biscotto config Shop              # Show all config values
-biscotto config Shop taxRate      # Show specific value
-biscotto config Shop taxRate 0.15 # Set a value
-biscotto config Shop --files      # List files in module data dir
-```
-
-### Module Status
-
-```bash
-biscotto status                   # Shows storage driver per module
-biscotto status Shop              # Shows storage info for Shop
+biscotto config Shop              # show all config values
+biscotto config Shop taxRate      # show specific value
+biscotto config Shop taxRate 0.15 # set a value
+biscotto config Shop --files      # list files in module data dir
+biscotto status                   # shows storage driver per module
+biscotto status Shop              # shows storage info for Shop
 ```
 
 ## Migration from Global Storage

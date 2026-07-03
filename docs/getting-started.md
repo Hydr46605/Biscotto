@@ -1,8 +1,6 @@
-# Getting Started with Biscotto
+# Getting Started
 
-Freshly baked for your server ~ one biscuit at a time.
-
----
+> **Upgrading from v1.x?** Read the [Migration Guide](./migration.md) first.
 
 ## Prerequisites
 
@@ -12,24 +10,23 @@ Freshly baked for your server ~ one biscuit at a time.
 ## Quick Start
 
 ```bash
-# Install the CLI globally
 npm install -g @biscotto/cli
-
-# Initialize a new project
 biscotto init my-bot
-
-# Navigate to your project
 cd my-bot
-
-# Install dependencies
 npm install
+```
 
-# Edit .env with your bot token
-# DISCORD_TOKEN=your_token_here
-# DISCORD_CLIENT_ID=your_client_id
-# DISCORD_GUILD_ID=your_guild_id
+Edit `.env` with your bot token:
 
-# Start the bot
+```env
+DISCORD_TOKEN=your_token_here
+DISCORD_CLIENT_ID=your_client_id
+DISCORD_GUILD_ID=your_guild_id
+```
+
+Then start the bot:
+
+```bash
 biscotto dev
 ```
 
@@ -38,39 +35,36 @@ biscotto dev
 ```
 my-bot/
   .biscotto/
-    installed.json      # Installed modules registry
+    installed.json      # installed modules registry
   src/
-    index.ts            # Bot entry point
+    index.ts            # bot entry point
   modules/
-    zero/               # Your first module
-      manifest.ts       # Module metadata
-      index.ts          # Module entry point
+    zero/               # your first module
+      manifest.ts       # module metadata
+      index.ts          # module entry point
       commands/
-        ping.ts         # Slash command
+        ping.ts         # slash command
       listeners/
-        ready.ts        # Event listener
-  .env                  # Environment variables
+        ready.ts        # event listener
+  .env                  # environment variables
   package.json
   tsconfig.json
 ```
 
 ## Creating a Module
 
-### Using the CLI
+### Scaffolding
 
 ```bash
-# Create a module with commands only
-biscotto create my-module
-
-# Create a module with all features
-biscotto create my-module --stack full
+biscotto create my-module              # commands only (default)
+biscotto create my-module --stack full # full stack
 
 # Available stacks:
-#   simple   - Commands only
-#   full     - Commands + buttons + modals + selects
-#   voice    - Commands + voice support
-#   storage  - Commands + storage integration
-#   moderate - Commands + buttons (moderation style)
+#   simple   — commands only
+#   full     — commands + buttons + modals + selects
+#   voice    — commands + voice support
+#   storage  — commands + storage integration
+#   moderate — commands + buttons (moderation style)
 ```
 
 ### manifest.ts
@@ -171,7 +165,7 @@ Biscotto merges intents from all modules automatically. Base intents (`Guilds`, 
 
 ## Storage
 
-Each module gets its own isolated storage instance. Declare the driver in your manifest:
+Each module gets its own isolated storage. Declare the driver in your manifest:
 
 ```typescript
 import { defineModule } from '@biscotto/core';
@@ -183,7 +177,6 @@ export default defineModule({
     storage: { driver: 'sqlite' },  // 'json' | 'sqlite' | 'yaml' | 'mysql'
   },
   async onLoad(ctx) {
-    // ctx.storage is fully isolated — your own file/DB/table
     await ctx.storage.set('counter', 42);
     const count = await ctx.storage.get<number>('counter');
     const exists = await ctx.storage.has('counter');
@@ -197,13 +190,8 @@ Each module also gets a data directory for free files (images, cards, etc.) via 
 
 ```typescript
 onLoad(ctx) {
-  // Write files
   ctx.data.writeFile('logo.png', imageBuffer);
-
-  // Read files
   const image = ctx.data.readBuffer('logo.png');
-
-  // List files
   const files = ctx.data.listFiles();
 }
 ```
@@ -241,7 +229,7 @@ export default defineModule({
 
 Configs are stored in `.biscotto/configs/<ModuleName>/config.json` and auto-created on first load.
 
-See [Module Storage](./module-storage.md) for details.
+See [Module Config](./module-config.md) for details.
 
 ## Ephemeral Replies
 
@@ -261,9 +249,9 @@ await ctx.defer({ ephemeral: false });
 await ctx.interaction.editReply('Done!');
 ```
 
-## Advanced: Raw Interaction Access
+## Components V2
 
-For complex UIs (Containers, Sections, etc.):
+For complex UIs (containers, sections, separators):
 
 ```typescript
 import { defineCommand } from '@biscotto/core';
@@ -296,8 +284,6 @@ export const infoCommand = defineCommand({
 ```
 
 ## Buttons
-
-Handle button interactions:
 
 ```typescript
 // commands/confirm.ts
@@ -346,10 +332,7 @@ export const confirmNoButton = defineButton({
 
 ## Select Menus
 
-Handle select menu interactions:
-
 ```typescript
-// components/role-select.ts
 import { defineSelectMenu } from '@biscotto/core';
 
 export const roleSelect = defineSelectMenu({
@@ -367,8 +350,6 @@ export const roleSelect = defineSelectMenu({
 ```
 
 ## Modals
-
-Handle modal submissions:
 
 ```typescript
 // commands/feedback.ts
@@ -415,7 +396,6 @@ export const feedbackModal = defineModal({
 Right-click user or message context menus:
 
 ```typescript
-// context-menus/quick-ban.ts
 import { defineUserContextMenu } from '@biscotto/core';
 
 export const quickBan = defineUserContextMenu({
@@ -434,30 +414,15 @@ export const quickBan = defineUserContextMenu({
 
 ## Publishing Your Module
 
-### Validate
-
 ```bash
-# Check if your module is ready
-biscotto pack my-module
+biscotto pack my-module           # validate
+biscotto publish my-module        # publish to GitHub
+biscotto publish my-module --private   # private repo
+biscotto publish my-module --dry-run   # validation only
+biscotto publish my-module --registry  # include registry instructions
 ```
 
-### Publish
-
-```bash
-# Publish to GitHub
-biscotto publish my-module
-
-# Publish with private repo
-biscotto publish my-module --private
-
-# Dry run (validation only)
-biscotto publish my-module --dry-run
-
-# Include registry submission instructions
-biscotto publish my-module --registry
-```
-
-## CLI Commands
+## CLI Reference
 
 | Command | Description |
 |---------|-------------|

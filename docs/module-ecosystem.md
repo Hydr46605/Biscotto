@@ -1,14 +1,10 @@
 # Module Ecosystem
 
-Biscotto's module ecosystem allows you to build complex bots from simple, composable modules. Modules can depend on each other, expose APIs, and be enabled/disabled at runtime.
-
----
+Modules can depend on each other, expose APIs, and be enabled/disabled at runtime.
 
 ## Dependencies
 
-Modules can declare dependencies on other modules. The dependency resolver ensures modules are loaded in the correct order.
-
-### Manifest
+Modules can declare dependencies on other modules. The resolver ensures they load in the correct order.
 
 ```typescript
 import type { ModuleManifest } from '@biscotto/core';
@@ -26,8 +22,6 @@ export const manifest: ModuleManifest = {
 
 ### Version Constraints
 
-Biscotto supports semver constraints:
-
 | Constraint | Meaning |
 |-----------|---------|
 | `^1.0.0` | Compatible with 1.0.0 (>=1.0.0 <2.0.0) |
@@ -37,8 +31,6 @@ Biscotto supports semver constraints:
 | `*` | Any version |
 
 ### Dependency Errors
-
-If a dependency is missing or has a version conflict, Biscotto will show an error:
 
 ```
 ✗ Module "shop" requires "ui-builder@^2.0.0" but found "1.5.0"
@@ -53,13 +45,13 @@ If a dependency is missing or has a version conflict, Biscotto will show an erro
 | `dependencies` | Module-level deps (version, load order) | `manifest.dependencies` | Boot time |
 | `requires` | Service deps (APIs other modules expose) | `manifest.requires` | Runtime (via `ctx.services.require()`) |
 
-Use `dependencies` for modules that must be loaded before yours. Use `requires` for services your module calls at runtime.
+Use `dependencies` for modules that must load before yours. Use `requires` for services your module calls at runtime.
 
 ---
 
 ## Service Registry
 
-Modules can expose APIs (services) that other modules can consume. This enables powerful composition patterns.
+Modules can expose APIs (services) that other modules can consume.
 
 ### Providing a Service
 
@@ -162,24 +154,20 @@ import { defineModule } from '@biscotto/core';
 export default defineModule({
   manifest: { name: 'my-module', version: '1.0.0' },
 
-  // Module loaded — initialize resources
   async onLoad(ctx) {
     ctx.logger.info('Loading module...');
     // Connect to database, load cache, etc.
   },
 
-  // Module enabled — register commands/events
   async onEnable(ctx) {
     ctx.logger.info('Module enabled');
   },
 
-  // Module disabled — cleanup resources
   async onDisable(ctx) {
     ctx.logger.info('Module disabled');
     // Close connections, clear cache, etc.
   },
 
-  // Module unloaded — final cleanup
   async onUnload(ctx) {
     ctx.logger.info('Module unloaded');
   },
@@ -202,54 +190,6 @@ interface ModuleContext {
 
 ---
 
-## CLI Commands
-
-### Enable/Disable Modules
-
-```bash
-# Enable a module
-biscotto enable shop
-
-# Disable a module
-biscotto disable shop
-
-# Reload a module (disable + enable)
-biscotto reload shop
-```
-
-### Module Status
-
-```bash
-# Global status
-biscotto status
-
-# Single module status
-biscotto status shop
-```
-
-Output:
-```
-  Status:    Running
-  PID:       12345
-  Modules:   3 installed (2 enabled, 1 disabled)
-
-  Modules:
-    [+] zero@1.0.0
-    [+] shop@1.2.0
-    [-] test@0.1.0
-```
-
-### Hot Reload
-
-```bash
-# Start with hot reload
-biscotto dev
-```
-
-The dev command watches the `modules/` directory for changes and automatically restarts the bot when files are modified.
-
----
-
 ## Module States
 
 | State | Description |
@@ -260,6 +200,31 @@ The dev command watches the `modules/` directory for changes and automatically r
 | DISABLED | Module is inactive (commands/events unregistered) |
 | ERROR | Module encountered an error |
 | UNLOADED | Module fully unloaded |
+
+---
+
+## CLI Commands
+
+```bash
+biscotto enable shop       # enable a module
+biscotto disable shop      # disable a module
+biscotto reload shop       # reload (disable + enable)
+biscotto status            # global status
+biscotto status shop       # single module status
+biscotto dev               # start with hot reload
+```
+
+Status output:
+```
+  Status:    Running
+  PID:       12345
+  Modules:   3 installed (2 enabled, 1 disabled)
+
+  Modules:
+    [+] zero@1.0.0
+    [+] shop@1.2.0
+    [-] test@0.1.0
+```
 
 ---
 

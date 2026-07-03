@@ -1,10 +1,10 @@
 # Module Configuration
 
-Biscotto provides a built-in configuration system for modules. Each module can define a config schema with typed fields, and configs are automatically created, merged, and validated.
+Each module can define a typed config schema. Biscotto handles creating, merging, and validating configs automatically.
 
 ## Defining Config
 
-Use `defineConfig` to create a typed configuration schema:
+Use `defineConfig` to create a typed schema:
 
 ```ts
 import { defineConfig } from '@biscotto/core';
@@ -25,9 +25,7 @@ const config = defineConfig({
 });
 ```
 
-## Config Fields
-
-Each field in the schema defines:
+## Schema Fields
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -82,9 +80,20 @@ onLoad(ctx) {
 }
 ```
 
-## Config Storage
+## How Config Merging Works
 
-Configs are stored as JSON files in `.biscotto/configs/<module>/config.json`:
+When a module loads, Biscotto automatically:
+
+1. Creates default config if none exists
+2. Adds missing keys from schema defaults
+3. Validates existing values against schema types
+4. Replaces invalid values with defaults
+
+This means you can safely add new config fields to future versions — existing configs will be updated automatically.
+
+## Storage Location
+
+Configs are stored as JSON in `.biscotto/configs/<module>/config.json`:
 
 ```
 .biscotto/
@@ -101,60 +110,25 @@ Configs are stored as JSON files in `.biscotto/configs/<module>/config.json`:
 └── installed.json
 ```
 
-## Config Merging
-
-When a module loads, Biscotto automatically:
-
-1. Creates default config if none exists
-2. Adds missing keys from schema defaults
-3. Validates existing values against schema types
-4. Replaces invalid values with defaults
-
-This means you can safely add new config fields to future versions — existing configs will be updated automatically.
-
 ## CLI Commands
 
-### View Config
-
 ```bash
-biscotto config <module>
+biscotto config <module>              # show all config values
+biscotto config <module> <key>        # show a specific value
+biscotto config <module> <key> <val>  # set a value
 ```
 
-Shows all config values for a module.
-
-### Get Specific Value
-
-```bash
-biscotto config <module> <key>
-```
-
-Shows a single config value.
-
-### Set Value
-
-```bash
-biscotto config <module> <key> <value>
-```
-
-Sets a config value. The value is parsed as:
+Values are parsed as:
 - `true` / `false` → boolean
 - `null` → null
 - Numbers → number
 - JSON strings → parsed JSON
 - Everything else → string
 
-## Example
-
 ```bash
-# View zero module config
-$ biscotto config zero
-
-# Get a specific value
 $ biscotto config zero prefix
+  zero.prefix: !
 
-# Set a value
 $ biscotto config zero prefix ?
-
-# Output:
-#   zero.prefix: ! → ?
+  zero.prefix: ! → ?
 ```
