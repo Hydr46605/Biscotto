@@ -8,9 +8,9 @@ import type {
   UserContextMenuDefinition,
   MessageContextMenuDefinition,
   MiddlewareOptions,
-} from '../contracts/module.contract.ts';
-import { LitLogger } from './logger.ts';
-import { MiddlewarePipeline } from './middleware/pipeline.ts';
+} from '../contracts/module.contract.js';
+import { LitLogger } from './logger.js';
+import { MiddlewarePipeline } from './middleware/pipeline.js';
 
 export class InteractionRouter {
   private commands = new Map<string, CommandDefinition>();
@@ -34,24 +34,45 @@ export class InteractionRouter {
     messageContextMenus?: MessageContextMenuDefinition[];
   }): void {
     for (const cmd of interactions.commands ?? []) {
+      if (this.commands.has(cmd.data.name)) {
+        LitLogger.warn('Router', `Duplicate command "/${cmd.data.name}" — overwriting previous registration`);
+      }
       this.commands.set(cmd.data.name, cmd);
     }
     for (const btn of interactions.buttons ?? []) {
+      if (this.buttons.has(btn.customId)) {
+        LitLogger.warn('Router', `Duplicate button "${btn.customId}" — overwriting previous registration`);
+      }
       this.buttons.set(btn.customId, btn);
     }
     for (const menu of interactions.selectMenus ?? []) {
+      if (this.selectMenus.has(menu.customId)) {
+        LitLogger.warn('Router', `Duplicate select menu "${menu.customId}" — overwriting previous registration`);
+      }
       this.selectMenus.set(menu.customId, menu);
     }
     for (const modal of interactions.modals ?? []) {
+      if (this.modals.has(modal.customId)) {
+        LitLogger.warn('Router', `Duplicate modal "${modal.customId}" — overwriting previous registration`);
+      }
       this.modals.set(modal.customId, modal);
     }
     for (const ac of interactions.autocompletes ?? []) {
+      if (this.autocompletes.has(ac.name)) {
+        LitLogger.warn('Router', `Duplicate autocomplete "${ac.name}" — overwriting previous registration`);
+      }
       this.autocompletes.set(ac.name, ac);
     }
     for (const ucm of interactions.userContextMenus ?? []) {
+      if (this.userContextMenus.has(ucm.name)) {
+        LitLogger.warn('Router', `Duplicate user context menu "${ucm.name}" — overwriting previous registration`);
+      }
       this.userContextMenus.set(ucm.name, ucm);
     }
     for (const mcm of interactions.messageContextMenus ?? []) {
+      if (this.messageContextMenus.has(mcm.name)) {
+        LitLogger.warn('Router', `Duplicate message context menu "${mcm.name}" — overwriting previous registration`);
+      }
       this.messageContextMenus.set(mcm.name, mcm);
     }
 
