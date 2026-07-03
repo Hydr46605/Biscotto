@@ -19,7 +19,7 @@ export const stopCommand: Command = {
     if (stopped) {
       console.log('  Bot stopped.');
     } else {
-      console.log('  Bot stopped (force killed).');
+      console.log('  Bot was not running.');
     }
   },
 };

@@ -17,7 +17,11 @@ function killBot(): Promise<void> {
       resolve();
     });
 
-    botProcess.kill('SIGTERM');
+    if (process.platform === 'win32') {
+      botProcess.kill();
+    } else {
+      botProcess.kill('SIGTERM');
+    }
 
     setTimeout(() => {
       if (botProcess) {
@@ -127,6 +131,8 @@ export const devCommand: Command = {
     };
 
     process.on('SIGINT', shutdown);
-    process.on('SIGTERM', shutdown);
+    if (process.platform !== 'win32') {
+      process.on('SIGTERM', shutdown);
+    }
   },
 };

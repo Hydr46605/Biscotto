@@ -19,7 +19,7 @@ export const listCommand: Command = {
       const source = mod.source.replace('https://github.com/', '');
       console.log(`  ${name}@${mod.version}`);
       console.log(`    source:   ${source}`);
-      console.log(`    installed:${mod.installedAt}`);
+      console.log(`    installed: ${mod.installedAt}`);
       if (mod.builtAt) console.log(`    built:    ${mod.builtAt}`);
       console.log('');
     }

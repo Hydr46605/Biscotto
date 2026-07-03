@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Command } from '../command.ts';
 import { ensureBiscottoDir, readInstalled, writeInstalled, modulesDir } from '../fs.ts';
@@ -65,7 +65,7 @@ export const addCommand: Command = {
     const manifest = readManifest(targetDir);
     if (!manifest) {
       console.error(`  Error: no valid biscotto.json found in ${repoName}`);
-      exec(`rm -rf ${targetDir}`, ctx.root);
+      rmSync(targetDir, { recursive: true, force: true });
       process.exit(1);
     }
 
@@ -79,8 +79,7 @@ export const addCommand: Command = {
       }
     }
 
-    // Build if build command specified
-    const buildCmd = manifest.entry?.endsWith('.js') ? null : 'tsc';
+    // Build if tsconfig exists
     if (existsSync(resolve(targetDir, 'tsconfig.json'))) {
       console.log(`  Building...`);
       try {
