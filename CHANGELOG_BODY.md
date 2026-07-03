@@ -25,6 +25,7 @@
 - fix: exported run(), fixed templates/docs to use execute(), fixed DEP0190 shell warning (49d5e89)
 
 ### 📦 Other Changes
+- release: v2.0.0 (fc88ebd)
 - docs: rewrite documentation for clarity and consistency (b850bed)
 - chore(ci): add test enforcement to CI and release workflows (302bb25)
 - refactor(core): migrate to ESM-only module system (fdd5972)
